@@ -122,6 +122,7 @@
     if (id) state.id = id;
     state.open = true;
     root.classList.add('show');
+    global.RangBack.push('library', close);
     render();
     $('#lb-back').focus();
   }
@@ -130,6 +131,7 @@
     if (!state.open) return;
     state.open = false;
     root.classList.remove('show');
+    global.RangBack.drop('library');
     if (state.lastFocus && document.contains(state.lastFocus) &&
         state.lastFocus.getClientRects().length) {
       state.lastFocus.focus();
@@ -893,6 +895,7 @@
     $('#dlg-x', dlg).onclick = done;
 
     dlg.classList.add('show');
+    global.RangBack.push('dialog', done);
     if (opts.onOpen) opts.onOpen();
     else {
       var firstInput = $('input, textarea', bodyWrap);
@@ -902,6 +905,7 @@
 
   function closeDialog() {
     if (dlg) dlg.classList.remove('show');
+    global.RangBack.drop('dialog');
   }
 
   function confirmDialog(opts) {

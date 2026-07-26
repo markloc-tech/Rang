@@ -766,8 +766,15 @@
     document.body.classList.toggle('side-open', open);
     syncMenuAria();
     if (open) {
+      // back closes the drawer the same way Escape does, menu button and all
+      RangBack.push('drawer', function () {
+        setDrawer(false);
+        $('#menu-btn').focus();
+      });
       var first = $('#side-nav button');
       if (first) first.focus();
+    } else {
+      RangBack.drop('drawer');
     }
   }
 
@@ -1265,7 +1272,11 @@
   function openStepsPop(open) {
     stepsPop.hidden = !open;
     stepsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    if (!open) return;
+    if (!open) { RangBack.drop('steps'); return; }
+    RangBack.push('steps', function () {
+      openStepsPop(false);
+      stepsBtn.focus();
+    });
     // On small screens the button can sit anywhere in the wrapped bar, so
     // anchor the popover to the viewport edges instead of the button.
     if (window.matchMedia('(max-width: 860px)').matches) {
@@ -1430,6 +1441,7 @@
     cmp.classList.toggle('single', recs.length === 1);
     cmpLastFocus = document.activeElement;
     cmp.classList.add('show');
+    RangBack.push('compare', closeCompare);
     syncChromeColor();          // phone chrome takes the color of the first strip
     $('#cmp-back').focus();
   }
@@ -1444,6 +1456,7 @@
       document.exitFullscreen().catch(function () { /* ignore */ });
     }
     cmp.classList.remove('show');
+    RangBack.drop('compare');
     syncChromeColor();
     if (cmpLastFocus && document.contains(cmpLastFocus) && cmpLastFocus.getClientRects().length) {
       cmpLastFocus.focus();
@@ -1893,12 +1906,14 @@
       b.classList.toggle('on', b.dataset.order === S.view);
     });
     modal.classList.add('show');
+    RangBack.push('print', closePrintModal);
     syncScopeUI();
     refreshDocStats();
     $('#modal-close').focus();
   }
   function closePrintModal() {
     modal.classList.remove('show');
+    RangBack.drop('print');
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
@@ -2003,6 +2018,7 @@
     renderSheets(doc);
     pvLastFocus = document.activeElement;
     pv.classList.add('show');
+    RangBack.push('preview', closePreview);
     S.zoomTouched = false;            // a fresh preview refits on rotation again
     setZoom(fitZoom());
     $('#pv-meta').textContent =
@@ -2014,6 +2030,7 @@
   }
   function closePreview() {
     pv.classList.remove('show');
+    RangBack.drop('preview');
     if (pvLastFocus && document.contains(pvLastFocus) && pvLastFocus.getClientRects().length) {
       pvLastFocus.focus();
     } else if (modal.classList.contains('show')) {

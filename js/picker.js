@@ -446,6 +446,7 @@
     if (!state.open) return;
     state.open = false;
     el.classList.remove('show');
+    global.RangBack.drop('picker');
     if (state.lastFocus && document.contains(state.lastFocus) && state.lastFocus.getClientRects().length) {
       state.lastFocus.focus();
     }
@@ -470,6 +471,7 @@
 
     state.open = true;
     el.classList.add('show');
+    global.RangBack.push('picker', close);
     // the field is the point of the dialog - put the caret in the hex box,
     // which is the fastest way in for anyone who already knows the value
     setTimeout(function () { refs['in-hex'].select(); }, 0);
