@@ -2105,6 +2105,29 @@
     rebuildCustom();
   });
 
+  /* ---------------- offline ---------------- */
+
+  /* Rang needs no network at all — the colors, the PDF writer and your library
+     are all local — so the only thing a service worker adds is having the
+     files themselves on hand. Registration is deliberately best-effort:
+     service workers need a secure context, so opening index.html straight off
+     the disk (file://) simply skips this and keeps working as it always has. */
+  function registerOffline() {
+    if (!('serviceWorker' in navigator)) return;
+    if (location.protocol !== 'https:' && location.hostname !== 'localhost' &&
+        location.hostname !== '127.0.0.1') return;
+    navigator.serviceWorker.register('sw.js').then(function () {
+      // A first-time visitor is controlled only from the next navigation on, so
+      // hand the worker this page's own asset list to cache right away.
+      if (!navigator.serviceWorker.controller) return;
+      var urls = performance.getEntriesByType('resource')
+        .map(function (r) { return r.name; })
+        .filter(function (u) { return u.indexOf(location.origin) === 0; });
+      urls.push(location.href);
+      navigator.serviceWorker.controller.postMessage({ type: 'cache-urls', urls: urls });
+    }, function () { /* no offline support here; the app is unaffected */ });
+  }
+
   /* ---------------- boot ---------------- */
 
   function boot() {
@@ -2152,6 +2175,7 @@
     }
 
     requestAnimationFrame(setIntrinsicSizes);
+    registerOffline();
   }
 
   boot();

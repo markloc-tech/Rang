@@ -4,8 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rang — Print-ready digital color swatches</title>
-  <meta name="description" content="Rang: a digital color swatch book for designers. 8,800+ colors, Pantone-style A4 printing, PDF export, HEX/RGB/CMYK values, full-screen compare.">
+  <meta name="description" content="Rang: a digital color swatch book for designers. 8,800+ colors, Pantone-style sheets on A3/A4/A5/Letter/Legal/Tabloid, PDF export, your own projects and categories, portable .rang files. Works offline.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext x='16' y='17' font-family='-apple-system,Arial,sans-serif' font-size='24' font-weight='800' fill='%23999999' text-anchor='middle' dominant-baseline='central'%3ER%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="assets/icon.svg">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <link rel="stylesheet" href="css/styles.css?v=20">
   <!-- @page cannot read custom properties, so app.js rewrites this rule
        whenever the paper size or orientation changes -->
@@ -26,7 +30,7 @@
 
     <div class="search-wrap" id="search-wrap">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
-      <input id="search" type="text" placeholder="Search name or hex — Enter jumps to it" autocomplete="off" spellcheck="false" aria-label="Search swatches by name or hex. Press Enter to jump to the first match">
+      <input id="search" type="text" placeholder="Search name or hex" autocomplete="off" spellcheck="false" aria-label="Search swatches by name or hex. Press Enter to jump to the first match">
       <button class="search-clear" id="search-clear" aria-label="Clear search">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
       </button>
@@ -340,7 +344,7 @@
   <script src="js/library.js?v=2"></script>
   <script src="js/picker.js?v=2"></script>
   <script src="js/pdf.js?v=17"></script>
-  <script src="js/app.js?v=18"></script>
+  <script src="js/app.js?v=19"></script>
   <script src="js/library-ui.js?v=4"></script>
 </body>
 </html>

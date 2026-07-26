@@ -1,0 +1,8 @@
+# macOS
+.DS_Store
+
+# editors
+.idea/workspace.xml
+*.swp
+
+# nothing is built — the repo is what gets published

@@ -16,7 +16,8 @@ to someone else as a portable **`.rang`** file.
 
 Digital (RGB/hex) colors only — this is a screen-color reference, not an ink-matching system.
 
-**Zero dependencies, no build step.** Open `index.html` directly in any browser, or serve it:
+**Zero dependencies, no build step, and it works offline.** Open `index.html` directly in any
+browser, or serve it:
 
 ```bash
 node dev-server.mjs
@@ -119,6 +120,30 @@ exists you choose what happens — **keep both** (default, nothing of yours chan
 into mine** (new colors appended, duplicate hexes skipped), or **replace mine** — after a
 preview of exactly what the file contains.
 
+## Offline
+
+Rang never talks to the network. Every color, the PDF writer and your whole library are
+local, so there is nothing to be offline *from* — the only thing the browser needs is the
+files themselves, and `sw.js` keeps those in a cache. After one visit the app opens, prints,
+exports PDFs and reads and writes `.rang` files with no connection at all, and **Add to home
+screen / Install** gives you a standalone window.
+
+Two strategies, on purpose:
+
+- **Navigations go to the network first**, cache second. `index.html` is what names the `?v=`
+  asset URLs, so keeping it fresh is how a new version gets picked up.
+- **Assets are served from the cache and refreshed in the background**
+  (stale-while-revalidate), so loads are instant either way, and an edit that forgot its `?v=`
+  bump still shows up on the next reload instead of being cached forever.
+
+The precache list is read out of `index.html` at install time rather than duplicated in the
+worker — one list to keep correct, not two. Bump `VERSION` in `sw.js` to discard every old
+cache.
+
+Service workers need a secure context, so opening `index.html` straight off the disk skips
+registration entirely and works exactly as it always has — `file://` needs no cache, the files
+are already there.
+
 ## Paper sizes
 
 | Paper | Size | Large | Standard | Compact |
@@ -136,6 +161,25 @@ sheet. Counts above are portrait; landscape re-solves the grid (A4 landscape Sta
 Margins grow with the paper but never shrink below A4's, which is what keeps the footer clear
 of typical printer hardware margins.
 
+## Publishing
+
+There is nothing to build, so any static host will do — push the repo and point the host at
+it. On **GitHub Pages**: Settings → Pages → *Deploy from a branch* → your default branch,
+folder `/ (root)`.
+
+Everything is already set up for it:
+
+- Every path in `index.html`, `sw.js` and the manifest is **relative**, so the app works at a
+  project-site subpath like `https://you.github.io/Colors/` as well as at a domain root. The
+  service worker scopes itself to wherever it is served from — verified under a subpath.
+- `.nojekyll` tells Pages to serve the files as they are instead of running them through Jekyll.
+- Pages is HTTPS, which is what the service worker needs, so the published site is offline-capable
+  and installable.
+
+When you push a change, bump the `?v=` query on any `js/` or `css/` file you touched — the
+service worker treats those URLs as immutable, and the bump is what tells returning visitors
+to fetch the new copy. Changed `sw.js` itself? Bump `VERSION` inside it too.
+
 ## Why vanilla (and not the React port)
 
 At 8,808 always-mounted cards, this app is the best case for direct DOM manipulation and
@@ -151,7 +195,9 @@ just to approach parity — at which point the framework was pure overhead.
 
 ```
 index.html         app shell
-assets/            Markloc logo + Etna brand font
+sw.js              service worker: caches the app so it runs offline
+manifest.webmanifest  installable-app metadata
+assets/            Markloc logo, Etna brand font, app icons
 css/styles.css     design system, sheet layout, @media print rules
 js/data.js         the curated 821-swatch dataset (from official sources)
 js/spectrum.js     generates Spectrum, Tones, Hue Wheel, Grays, RGB Cube (7,987 colors)
