@@ -58,14 +58,18 @@ node dev-server.mjs
 - **Steps filter** - the *Steps* button filters any numbered ramp: drag the range slider
   (e.g. 100–1700) or type specifics like `700, 900, 1100`. Print it via **Current view**.
 - **Full-screen color** - hover a swatch and hit the expand icon (or double-click, or press
-  `F` on a focused card); select 2+ and *Compare* for side-by-side strips.
+  `F` on a focused card); select 2+ and *Compare* for side-by-side strips. On a touch screen
+  there is no hover, so the expand icon is gone: **long-press** the swatch instead.
 - **Jump to a match** - press Enter in the search box to scroll to and flash the first match.
-- **Select** - click; shift-click for ranges; family/collection/sidebar checkboxes for groups.
-  Selection survives reloads. Click any value label to copy it.
-- **Print & Export** (`⌘P`) - paper (A3 / A4 / A5 / Letter / Legal / Tabloid, portrait or
-  landscape), scope (everything / selected / current view / collections / a saved project),
-  order (catalog or flow), density (Large / Standard / Compact), sheet ranges like `1-4, 7`.
-  Print and Export always show the live preview first; the PDF is generated client-side.
+- **Select** - click (tap on touch); shift-click for ranges; family/collection/sidebar
+  checkboxes for groups. Selection survives reloads. Click any value label to copy it.
+  On a phone the browser's own toolbar and status bar take the color of whatever you last
+  picked, or of the swatch you have full-screened.
+- **Export** (`⌘P`) - one dialog for both printing and PDF: paper (A3 / A4 / A5 / Letter /
+  Legal / Tabloid, portrait or landscape), scope (everything / selected / current view /
+  collections / a saved project), order (catalog or flow), density (Large / Standard /
+  Compact), sheet ranges like `1-4, 7`.
+  Print and Export PDF both show the live preview first; the PDF is generated client-side.
   The dialog opens on **Selected swatches** whenever a selection exists, and the sheet range
   starts empty every time so a range typed for one document never truncates the next.
 - **Theme** - light is the default; light is pure white, dark is pure black. Sheets always

@@ -233,7 +233,7 @@
         '<button class="ghost-btn" id="lb-add-sel">From selection</button>' +
         '<span class="lib-tools-gap"></span>' +
         '<button class="ghost-btn" id="lb-compare">Compare</button>' +
-        '<button class="ghost-btn" id="lb-print">Print &amp; export</button>' +
+        '<button class="ghost-btn" id="lb-print">Export</button>' +
         (kind === 'categories' ? '<button class="ghost-btn" id="lb-goto">Show in book</button>' : '') +
         '<div class="lib-menu-wrap">' +
           '<button class="ghost-btn" id="lb-more" aria-haspopup="true" aria-expanded="false">More ▾</button>' +
@@ -284,7 +284,7 @@
       App().compare(item.colors.map(function (c) { return { name: c.name, hex: c.hex }; }), item.name);
     });
     $('#lb-print').addEventListener('click', function () {
-      if (!item.colors.length) { toast('Nothing to print yet'); return; }
+      if (!item.colors.length) { toast('Nothing to export yet'); return; }
       close();
       if (kind === 'projects') App().openPrint('project', { projectId: item.id });
       else App().openPrint('collections', { collectionId: 'cat:' + item.id });

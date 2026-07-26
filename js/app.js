@@ -196,6 +196,31 @@
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     store('sb.theme', theme);
+    syncChromeColor();
+  }
+
+  /* Mobile browser chrome. A phone paints its toolbar (and an installed app its
+     status bar) from <meta name="theme-color">, so the OS chrome can follow the
+     color on screen: the full-screen swatch if one is open, else the swatch
+     picked last, else the plain theme background. A desktop browser ignores it,
+     which is why this is the whole implementation. */
+  function themeBg() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? '#000000' : '#ffffff';
+  }
+
+  function syncChromeColor() {
+    var hex = '';
+    // cmp is declared further down; on the first call it does not exist yet
+    if (cmp && cmp.classList.contains('show')) {
+      var strip = cmp.querySelector('.cmp-strip');
+      if (strip) hex = strip.dataset.hex;
+    }
+    if (!hex && S.selection.size) {
+      // Set keeps insertion order, so the tail is the most recent pick
+      var rec = BY_UID.get(Array.from(S.selection).pop());
+      if (rec) hex = rec.hex;
+    }
+    $('#theme-color').setAttribute('content', hex || themeBg());
   }
   /* Light is the default, deliberately: a swatch book is a white-paper document
      and the sheets are always white, so first run should match what prints.
@@ -204,6 +229,7 @@
   (function initTheme() {
     var saved = load('sb.theme', null);
     document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+    syncChromeColor();
   })();
   $('#theme-toggle').addEventListener('click', function () {
     var cur = document.documentElement.getAttribute('data-theme');
@@ -896,7 +922,9 @@
 
     var bar = $('#sel-bar');
     bar.classList.toggle('show', n > 0);
-    $('#sel-count').textContent = n + ' selected';
+    // the word is dropped on very narrow phones (styles.css), the number never is
+    $('#sel-count').innerHTML = '<b>' + n + '</b><span class="sel-word"> selected</span>';
+    syncChromeColor();
 
     COLLECTIONS.forEach(function (col) {
       var entry = colEls.get(col.id);
@@ -956,6 +984,9 @@
   /* card interactions (event delegation over both views) */
 
   $('#main').addEventListener('click', function (e) {
+    // a long press already acted (full-screen view); the click it trails must
+    // not toggle the selection on top of that
+    if (longPress.fired) { longPress.fired = false; return; }
     var tool = e.target.closest('.card-tool');
     if (tool) {
       e.stopPropagation();
@@ -984,6 +1015,61 @@
     if (e.target.closest('.hex') || e.target.closest('.zoom')) return;
     var card = e.target.closest('.card');
     if (card) openSingle(card.dataset.uid);
+  });
+
+  /* Touch gestures on a card: a tap picks it, a long press opens the
+     full-screen view. Touch has no hover, so the zoom button is hidden there
+     (styles.css) and the press takes its place - the same role double-click
+     plays with a mouse. Anything that moves is a scroll, not a press. */
+  var LONG_PRESS_MS = 420;
+  var LONG_PRESS_SLOP = 9;              // px of finger drift still counted as a press
+  var longPress = { timer: null, uid: '', x: 0, y: 0, fired: false, touch: false };
+
+  function cancelLongPress() {
+    if (longPress.timer) clearTimeout(longPress.timer);
+    longPress.timer = null;
+  }
+
+  function fireLongPress() {
+    cancelLongPress();
+    longPress.fired = true;
+    // a short buzz is the only feedback a finger gets that the press landed
+    if (navigator.vibrate) navigator.vibrate(12);
+    openSingle(longPress.uid);
+  }
+
+  $('#main').addEventListener('pointerdown', function (e) {
+    longPress.touch = e.pointerType !== 'mouse';
+    cancelLongPress();
+    if (e.pointerType === 'mouse' || !e.isPrimary) return;
+    var card = e.target.closest('.card');
+    if (!card || e.target.closest('.card-tool') || e.target.closest('.hex')) return;
+    longPress.uid = card.dataset.uid;
+    longPress.fired = false;
+    longPress.x = e.clientX;
+    longPress.y = e.clientY;
+    longPress.timer = setTimeout(fireLongPress, LONG_PRESS_MS);
+  });
+
+  $('#main').addEventListener('pointermove', function (e) {
+    if (!longPress.timer) return;
+    if (Math.abs(e.clientX - longPress.x) > LONG_PRESS_SLOP ||
+        Math.abs(e.clientY - longPress.y) > LONG_PRESS_SLOP) cancelLongPress();
+  }, { passive: true });
+
+  ['pointerup', 'pointercancel'].forEach(function (type) {
+    $('#main').addEventListener(type, cancelLongPress, { passive: true });
+  });
+
+  // Android answers a long press with its own text/share callout; ours has
+  // already handled the gesture, so suppress it on a card (touch only - a real
+  // right-click on a desktop should still get the browser menu).
+  $('#main').addEventListener('contextmenu', function (e) {
+    if (!longPress.touch || !e.target.closest('.card')) return;
+    e.preventDefault();
+    // some browsers raise the callout before our own timer is up - honour the
+    // gesture there and then rather than dropping it
+    if (longPress.timer) fireLongPress();
   });
 
   $('#main').addEventListener('keydown', function (e) {
@@ -1337,6 +1423,7 @@
     cmp.classList.toggle('single', recs.length === 1);
     cmpLastFocus = document.activeElement;
     cmp.classList.add('show');
+    syncChromeColor();          // phone chrome takes the color of the first strip
     $('#cmp-back').focus();
   }
 
@@ -1350,6 +1437,7 @@
       document.exitFullscreen().catch(function () { /* ignore */ });
     }
     cmp.classList.remove('show');
+    syncChromeColor();
     if (cmpLastFocus && document.contains(cmpLastFocus) && cmpLastFocus.getClientRects().length) {
       cmpLastFocus.focus();
     }
@@ -1379,7 +1467,7 @@
       strip.remove();
       var left = $('#cmp-strips').children.length;
       $('#cmp-meta').textContent = left + ' colors';
-      if (left < 2) closeCompare();
+      if (left < 2) closeCompare(); else syncChromeColor();
       return;
     }
     var s = e.target.closest('.cmp-strip');
@@ -1659,7 +1747,7 @@
 
     var swatches = doc.pages.reduce(function (n, p) { return n + p.swatches.length; }, 0);
     if (swatches === 0) {
-      $('#doc-stats').textContent = 'Nothing to print';
+      $('#doc-stats').textContent = 'Nothing to export';
       setActionEnabled(false);
     } else {
       $('#doc-stats').innerHTML =

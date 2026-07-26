@@ -469,7 +469,6 @@ html[data-theme="dark"] #theme-toggle .sun { display: none; }
 .side-goto:hover { background: var(--active); color: var(--fg); }
 @media (hover: none), (max-width: 1000px) {
   .side-goto { opacity: 1; }          /* no hover on touch - always show */
-  .card .zoom { opacity: 0.9; }
 }
 
 .side-row .mini-check { padding: 9px 10px 9px 4px; }
@@ -615,13 +614,21 @@ html[data-theme="dark"] #theme-toggle .sun { display: none; }
   background: var(--bg);
   user-select: none;
   -webkit-user-select: none;
+  /* a long press is our own gesture (full-screen view), so the OS must not
+     answer it with a text-selection or share callout of its own */
+  -webkit-touch-callout: none;
   transition: border-color 0.12s, box-shadow 0.12s, transform 0.06s;
 }
-.card:hover {
-  border-color: var(--line-strong);
-  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.09);
+/* Hover chrome only where a pointer can really hover. On a phone the emulated
+   hover fires on tap, so the first tap used to paint a hover state and read as
+   "nothing happened" instead of selecting. */
+@media (hover: hover) {
+  .card:hover {
+    border-color: var(--line-strong);
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.09);
+  }
+  html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7); }
 }
-html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7); }
 .card:active { transform: scale(0.985); }
 .card.selected { border-color: var(--fg); box-shadow: 0 0 0 1px var(--fg); }
 
@@ -631,7 +638,9 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
   position: relative;
 }
 
-/* full-screen view affordance, appears on hover */
+/* full-screen view affordance, appears on hover. Touch has no hover and no room
+   for a 26px target inside the chip, so there a long press opens the same view
+   and this button is hidden (see the (hover: none) rule below). */
 .card .zoom {
   position: absolute;
   top: 7px;
@@ -650,9 +659,15 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
 }
-.card:hover .zoom,
 .card:focus-within .zoom { opacity: 1; }
-.card .zoom:hover { background: rgba(0, 0, 0, 0.62); }
+@media (hover: hover) {
+  .card:hover .zoom { opacity: 1; }
+  .card .zoom:hover { background: rgba(0, 0, 0, 0.62); }
+}
+/* touch: long-press the chip instead - one less thing between a tap and a pick */
+@media (hover: none) {
+  .card .zoom { display: none; }
+}
 
 /* jump-to-search highlight */
 @keyframes flash-pulse {
@@ -733,7 +748,9 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
   padding: 8px 10px 8px 16px;
   background: var(--inv-bg);
   color: var(--inv-fg);
-  border-radius: 14px;
+  /* a floating pill: fully rounded, and every child rounded to match so the
+     bar reads as one object at phone size instead of a slab of boxes */
+  border-radius: 999px;
   box-shadow: var(--shadow);
   transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2), opacity 0.2s;
   opacity: 0;
@@ -745,11 +762,16 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
   opacity: 1;
   pointer-events: auto;
 }
-.sel-bar .sel-count { font-weight: 700; font-variant-numeric: tabular-nums; margin-right: 8px; }
+.sel-bar .sel-count {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-right: 8px;
+  flex: none;
+}
 .sel-bar button {
   height: 32px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: 999px;
   color: var(--inv-fg);
   font-weight: 600;
   font-size: 13px;
@@ -763,7 +785,9 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
 .sel-bar .sel-primary:hover { background: var(--inv-fg); opacity: 0.85; }
 .sel-bar .sel-x {
   width: 32px;
+  flex: none;                 /* never squeeze the close target on a phone */
   padding: 0;
+  border-radius: 50%;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -771,6 +795,7 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
 }
 .sel-bar .divider {
   width: 1px;
+  flex: none;
   height: 18px;
   background: currentColor;
   opacity: 0.2;
@@ -2268,27 +2293,26 @@ body.flow-mode #collections { display: none; }
 
 /* Small-screen fixes for every floating surface: nothing may overflow. */
 @media (max-width: 640px) {
-  /* selection bar: full-width compact pill */
+  /* Selection bar: still a single centred pill, just tighter. It stays on one
+     row now that Print and Export are one button, and it clears the home
+     indicator on phones that have one. */
   .sel-bar {
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    transform: translateY(100px);
-    justify-content: center;
-    gap: 2px;
-    padding: 8px 8px 8px 10px;
+    max-width: calc(100vw - 20px);
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    gap: 1px;
+    padding: 7px 7px 7px 13px;
   }
-  .sel-bar.show { transform: translateY(0); }
-  /* five actions will not fit on one phone row - let the count take its own */
-  .sel-bar { flex-wrap: wrap; white-space: normal; }
-  .sel-bar .sel-count {
-    flex: 1 1 100%;
-    text-align: center;
-    margin: 0 0 4px;
-    font-size: 12px;
-  }
-  .sel-bar button { padding: 0 9px; font-size: 12.5px; height: 30px; }
-  .sel-bar .divider { margin: 0 2px; }
+  .sel-bar .sel-count { margin-right: 3px; font-size: 12px; }
+  .sel-bar button { padding: 0 10px; font-size: 12.5px; }
+  .sel-bar .divider { margin: 0 1px; }
+}
+
+/* A 320px phone cannot hold "6 selected" plus three actions plus the close
+   button without squeezing the tap targets, and the checkmarks on the cards
+   already say what is picked - so only the number survives. */
+@media (max-width: 380px) {
+  .sel-bar { padding-left: 11px; }
+  .sel-bar .sel-word { display: none; }
 
   /* print dialog: footer wraps, buttons share the row */
   .modal-foot { flex-wrap: wrap; gap: 8px; }

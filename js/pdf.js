@@ -38,14 +38,16 @@
   var FAINT_TEXT = '0.6 0.6 0.6';
   var CHIP_STROKE = '0.85 0.85 0.85';
 
-  /* PDF literal strings here are WinAnsi. Keep to ASCII plus the three
-     punctuation marks the sheet markup actually uses - em dash, middle dot and
-     multiplication sign all have WinAnsi slots, so map them through rather than
-     dropping them: the printed sheet and the PDF must read the same. */
+  /* PDF literal strings here are WinAnsi. Keep to ASCII plus the two punctuation
+     marks the sheet markup actually uses - the middle dot and the multiplication
+     sign both have WinAnsi slots, so map them through rather than dropping them:
+     the printed sheet and the PDF must read the same. The app writes plain
+     hyphens, never em dashes, so a stray em dash in imported data folds to one
+     too instead of printing as a character the sheet would not show. */
   function ascii(s) {
     return String(s)
-      .replace(/-/g, '\x97').replace(/·/g, '\xB7').replace(/×/g, '\xD7')
-      .replace(/[^\x20-\x7E\x97\xB7\xD7]/g, '');
+      .replace(/—/g, '-').replace(/·/g, '\xB7').replace(/×/g, '\xD7')
+      .replace(/[^\x20-\x7E\xB7\xD7]/g, '');
   }
 
   function esc(s) {
@@ -81,7 +83,7 @@
     '.': 278, '/': 278, ':': 278, ';': 278, '<': 584, '=': 584, '>': 584,
     '?': 556, '@': 1015, '[': 278, '\\': 278, ']': 278, '^': 469, '_': 556,
     '`': 333, '{': 334, '|': 260, '}': 334, '~': 584,
-    '\x97': 1000, '\xB7': 278, '\xD7': 584,
+    '\xB7': 278, '\xD7': 584,
     0: 556, 1: 556, 2: 556, 3: 556, 4: 556, 5: 556, 6: 556, 7: 556, 8: 556, 9: 556,
     A: 667, B: 667, C: 722, D: 722, E: 667, F: 611, G: 778, H: 722, I: 278,
     J: 500, K: 667, L: 556, M: 833, N: 722, O: 778, P: 667, Q: 778, R: 722,
