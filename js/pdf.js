@@ -1,23 +1,22 @@
 /* ============================================================
    Swatchbook PDF engine
-   Generates the A4 swatch sheets as a real PDF file with zero
+   Generates the swatch sheets as a real PDF file with zero
    dependencies. Uses PDF base-14 fonts (Helvetica for labels,
    Courier-Bold for hex codes) and plain filled rectangles for
    the chips, mirroring the print stylesheet layout.
+
+   Page size, margins and the swatch grid all come from
+   js/paper.js — the same numbers the stylesheet lays the
+   preview out with, so the two renderers cannot drift.
    ============================================================ */
 
 (function (global) {
   'use strict';
 
   var MM = 72 / 25.4;               // points per millimetre
-  var PAGE_W = 595.28;              // A4 width in pt
-  var PAGE_H = 841.89;              // A4 height in pt
 
-  var DENSITY = {
-    12: { cols: 3, rows: 4, gap: 4 * MM, nameSize: 7,   hexSize: 10 },
-    24: { cols: 4, rows: 6, gap: 4 * MM, nameSize: 6,   hexSize: 8.5 },
-    40: { cols: 5, rows: 8, gap: 3 * MM, nameSize: 5,   hexSize: 7 }
-  };
+  var Paper = global.RangPaper ||
+    (typeof require !== 'undefined' ? require('./paper.js') : null);
 
   // Markloc wordmark as raw PDF path ops (converted from assets/markloc-logo.svg,
   // y-up, box 487.5 x 97.5; glyph baseline at y=1.2, cap height 90).
@@ -115,29 +114,44 @@
   }
 
   /**
-   * pages: [{ no, title, swatches: [{name, hex}] }]
-   * opts:  { perPage, showNames, showHeaders, totalSheets, appName }
+   * pages: [{ no, title, swatches: [{name, hex, value}] }]
+   * opts:  { geom, showNames, showHeaders, totalSheets, appName, brandLine }
+   *        `geom` is a js/paper.js geometry record; it decides the page size,
+   *        margins and grid. Omitted, it falls back to A4 standard.
    * Returns a Uint8Array with the complete PDF file.
    */
   function buildPDF(pages, opts) {
-    var d = DENSITY[opts.perPage] || DENSITY[24];
+    var geom = opts.geom || (Paper && Paper.geometry('a4', false, 'standard'));
     var showNames = opts.showNames !== false;
     var showHeaders = opts.showHeaders !== false;
     var totalSheets = opts.totalSheets || pages.length;
     var appName = opts.appName || 'Rang';
 
-    // 14mm bottom keeps the footer and last row inside typical printer
+    var d = {
+      cols: geom.cols,
+      rows: geom.rows,
+      gap: geom.gap * MM,
+      nameSize: geom.nameSize,
+      hexSize: geom.hexSize
+    };
+    // Lay out against the same rounded point size the MediaBox declares, so
+    // a right-aligned run ends exactly on the margin the page claims to have.
+    var PAGE_W = geom.pageWPt;
+    var PAGE_H = geom.pageHPt;
+
+    // The bottom margin keeps the footer and last row inside typical printer
     // hardware margins (must match .sheet padding in styles.css)
-    var mL = 12 * MM, mR = 12 * MM, mT = 10 * MM, mB = 14 * MM;
-    /* Chrome geometry measured off the rendered HTML sheet (297mm tall), so the
-       swatch grid lands in the same place in both renderers: .sheet-head is
-       8.38mm + 4mm margin-bottom, .sheet-foot is 8.07mm, the title baseline sits
-       13.835mm below the sheet top, the head rule 18.378mm below it, and the
-       footer baseline 15.761mm above the sheet bottom.
+    var mL = geom.margins.left * MM, mR = geom.margins.right * MM;
+    var mT = geom.margins.top * MM, mB = geom.margins.bottom * MM;
+    /* Chrome geometry measured off the rendered HTML sheet, so the swatch grid
+       lands in the same place in both renderers: .sheet-head is 8.38mm + 4mm
+       margin-bottom, .sheet-foot is 8.07mm, the title baseline sits 3.835mm
+       below the top of the header block and the footer baseline 1.761mm above
+       the bottom of the content box.
        Re-measure if the header/footer type sizes change. */
-    var headH = showHeaders ? 12.38 * MM : 2 * MM;
-    var footH = showHeaders ? 8.07 * MM : 0;
-    var titleUp = headH - (13.835 - 10) * MM;   // title baseline above gridTop
+    var headH = showHeaders ? geom.headH * MM : 2 * MM;
+    var footH = showHeaders ? geom.footH * MM : 0;
+    var titleUp = headH - 3.835 * MM;           // title baseline above gridTop
     var ruleUp = 4 * MM;                        // .sheet-head margin-bottom
 
     var gridTop = PAGE_H - mT - headH;
@@ -148,10 +162,16 @@
     var cellW = (gridW - d.gap * (d.cols - 1)) / d.cols;
     var cellH = (gridH - d.gap * (d.rows - 1)) / d.rows;
 
+    /* Label block height, taken from what the stylesheet actually lays out:
+       .plabel's 1.5mm padding-top, the .pname line box, then .phex's 0.4mm
+       margin-top and its own line box, both at the body line-height. The old
+       estimate (nameSize + 2 + hexSize, in points) ran ~2mm short, which made
+       every chip in the PDF 2mm taller than the same chip on the printed
+       sheet. Measured against the rendered sheet: 9.317mm at 24-up. */
+    var LINE_H = 1.45;
     var padTop = 1.5 * MM;
-    var labelH = showNames
-      ? padTop + d.nameSize + 2 + d.hexSize
-      : padTop + d.hexSize;
+    var labelH = padTop + 0.4 * MM + d.hexSize * LINE_H +
+      (showNames ? d.nameSize * LINE_H : 0);
     var chipH = cellH - labelH;
 
     var streams = pages.map(function (page) {
@@ -160,14 +180,14 @@
       if (showHeaders) {
         // Title, spec note, hairline rule, footer.
         c += textOp('F2', 10, DARK_TEXT, mL, gridTop + titleUp, page.title, TRACK_TITLE);
-        var sub = 'A4 \xB7 210 \xD7 297 MM';
+        var sub = ascii(geom.subLabel.toUpperCase());
         c += textOp('F1', 6.5, FAINT_TEXT,
           PAGE_W - mR - textWidth(sub, 6.5, TRACK_SUB), gridTop + titleUp, sub, TRACK_SUB);
         c += '0.886 0.886 0.886 RG 0.6 w ' +
           num(mL) + ' ' + num(gridTop + ruleUp) + ' m ' +
           num(PAGE_W - mR) + ' ' + num(gridTop + ruleUp) + ' l S\n';
 
-        var footY = 15.761 * MM;        // .sheet-foot baseline, measured (see above)
+        var footY = mB + 1.761 * MM;    // .sheet-foot baseline, measured (see above)
         var footSize = 7.5;
         // app.js passes its BRAND_LINE so the sheet and the PDF cannot drift apart
         var brand = opts.brandLine || (appName.toUpperCase() + ' — AN OPEN SOURCE PROJECT BY');
@@ -277,7 +297,7 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = filename || 'swatchbook-a4.pdf';
+    a.download = filename || 'rang.pdf';
     document.body.appendChild(a);
     a.click();
     a.remove();

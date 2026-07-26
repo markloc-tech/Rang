@@ -14,17 +14,22 @@
   /* ---------------- data ---------------- */
 
   var RAW = window.SWATCH_DATA || [];
-  var COLLECTIONS = [];
+  var LIB = window.RangLibrary;
+  var Color = window.RangColor;
+
+  var BUILTIN = [];                 // the shipped palettes, never mutated
+  var CUSTOM = [];                  // the user's own categories, rebuilt on change
+  var COLLECTIONS = [];             // CUSTOM first, then BUILTIN — the book order
   var ALL = [];                     // flat swatch records in catalog (book) order
   var BY_UID = new Map();
 
-  RAW.forEach(function (c) {
+  BUILTIN = RAW.map(function (c) {
     var col = { id: c.id, name: c.collection, description: c.description || '', families: [], count: 0 };
     c.families.forEach(function (f) {
       var fam = { name: f.name, colId: c.id, swatches: [] };
       f.swatches.forEach(function (s) {
         var stepMatch = s.name.match(/(\d+)\s*$/);
-        var rec = {
+        fam.swatches.push({
           uid: c.id + '|' + f.name + '|' + s.name,
           name: s.name,
           hex: s.hex.toUpperCase(),
@@ -32,16 +37,65 @@
           colId: c.id,
           colName: c.collection,
           step: stepMatch ? parseInt(stepMatch[1], 10) : null
-        };
-        fam.swatches.push(rec);
-        ALL.push(rec);
-        BY_UID.set(rec.uid, rec);
+        });
       });
       col.families.push(fam);
       col.count += fam.swatches.length;
     });
-    COLLECTIONS.push(col);
+    return col;
   });
+
+  /* A saved category becomes a collection like any other, so it browses,
+     searches, selects, compares and prints exactly like Tailwind does. */
+  function categoryCollection(cat) {
+    var col = {
+      id: 'cat:' + cat.id,
+      catId: cat.id,
+      custom: true,
+      name: cat.name,
+      description: cat.description,
+      families: [],
+      count: cat.colors.length
+    };
+    var fam = { name: cat.name, colId: col.id, custom: true, swatches: [] };
+    cat.colors.forEach(function (c) {
+      var stepMatch = c.name.match(/(\d+)\s*$/);
+      fam.swatches.push({
+        uid: col.id + '|' + c.id,
+        name: c.name,
+        hex: c.hex,
+        famName: cat.name,
+        colId: col.id,
+        colName: cat.name,
+        step: stepMatch ? parseInt(stepMatch[1], 10) : null,
+        custom: true,
+        catId: cat.id,
+        colorId: c.id,
+        note: c.note
+      });
+    });
+    col.families.push(fam);
+    return col;
+  }
+
+  /* Re-derive the flat views after the custom categories change. */
+  function rebuildIndex() {
+    COLLECTIONS = CUSTOM.concat(BUILTIN);
+    ALL = [];
+    BY_UID = new Map();
+    COLLECTIONS.forEach(function (col) {
+      col.families.forEach(function (fam) {
+        fam.swatches.forEach(function (rec) {
+          ALL.push(rec);
+          BY_UID.set(rec.uid, rec);
+        });
+      });
+    });
+    flowOrder = null;
+    flowKept = null;
+  }
+
+  rebuildIndex();                   // built-ins only; boot() folds the library in
 
   /* ---------------- state ---------------- */
 
@@ -53,6 +107,9 @@
     visible: new Set(ALL.map(function (r) { return r.uid; })),
     view: 'catalog',                // 'catalog' | 'flow'
     valueMode: 'hex',               // 'hex' | 'rgb' | 'cmyk'
+    paper: 'a4',                    // js/paper.js paper id
+    landscape: false,
+    density: 'standard',            // 'large' | 'standard' | 'compact'
     steps: { min: 0, max: 2000, list: null, invalid: false },
     zoom: 0.62,
     lastPages: null,
@@ -210,8 +267,11 @@
 
   /* ---------------- render: main grid ---------------- */
 
+  var EDIT_SVG = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 2.5a2.1 2.1 0 0 1 3 3L6 13l-3.5.8L3 10z"/></svg>';
+  var TRASH_SVG = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5 5 13h6l.5-8.5"/></svg>';
+
   function cardHtml(sw) {
-    return '<div class="card" role="checkbox" aria-checked="false" tabindex="0" aria-keyshortcuts="F"' +
+    return '<div class="card' + (sw.custom ? ' card-own' : '') + '" role="checkbox" aria-checked="false" tabindex="0" aria-keyshortcuts="F"' +
       ' aria-label="' + escapeHtml(sw.name + ', ' + sw.hex) + '. F opens full screen"' +
       ' title="' + escapeHtml(sw.name + ' - ' + sw.hex + ' - rgb(' + hexToRgb(sw.hex).join(', ') + ')') + '"' +
       ' data-uid="' + escapeHtml(sw.uid) + '">' +
@@ -219,10 +279,18 @@
         '<button class="zoom" tabindex="-1" aria-label="View full screen" title="Full screen (or double-click)">' +
           '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2H2v4M10 2h4v4M6 14H2v-4M10 14h4v-4"/></svg>' +
         '</button>' +
+        (sw.custom
+          ? '<span class="card-own-tools">' +
+              '<button class="card-tool card-edit" aria-label="Edit ' + escapeHtml(sw.name) + '" title="Edit color">' + EDIT_SVG + '</button>' +
+              '<button class="card-tool card-del" aria-label="Remove ' + escapeHtml(sw.name) + '" title="Remove from this category">' + TRASH_SVG + '</button>' +
+            '</span>'
+          : '') +
         '<span class="check">' + CHECK_SVG + '</span>' +
       '</div>' +
       '<div class="meta">' +
-        '<span class="name">' + escapeHtml(sw.name) + '</span>' +
+        // an unnamed custom color is called after its own hex — no point
+        // printing the same string twice, but the line still holds its height
+        '<span class="name">' + escapeHtml(sw.name === sw.hex ? '' : sw.name) + '</span>' +
         '<button class="hex" data-hex="' + sw.hex + '" aria-label="Copy color value" title="Copy value">' + sw.hex + '</button>' +
       '</div></div>';
   }
@@ -231,7 +299,7 @@
     var root = $('#collections');
     var frag = document.createDocumentFragment();
 
-    COLLECTIONS.forEach(function (col) {
+    BUILTIN.forEach(function (col) {
       var section = document.createElement('section');
       section.className = 'collection';
       section.id = 'col-' + col.id;
@@ -302,11 +370,226 @@
     root.appendChild(frag);
   }
 
+  /* ---------------- render: your own categories ---------------- */
+
+  /* Registry keys owned by the last custom render, so a rebuild can retract
+     exactly what it put in and leave the 8,808 built-in cards alone. */
+  var customUids = [];
+
+  function libraryUI() { return window.RangLibraryUI || null; }
+
+  function customSection(col) {
+    var section = document.createElement('section');
+    section.className = 'collection collection-own';
+    section.id = 'col-' + col.id;
+
+    var head = document.createElement('div');
+    head.className = 'col-head';
+    head.innerHTML =
+      '<div><h2></h2><p class="col-desc"></p></div>';
+    head.querySelector('h2').textContent = col.name;
+    var desc = head.querySelector('.col-desc');
+    desc.textContent = col.description ||
+      'Your own category — add colors by hand, or save any swatch from the book into it.';
+
+    var actions = document.createElement('div');
+    actions.className = 'col-actions';
+
+    var countEl = document.createElement('span');
+    countEl.className = 'col-count';
+
+    var addBtn = document.createElement('button');
+    addBtn.className = 'ghost-btn';
+    addBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9"/></svg> Add colors';
+    addBtn.addEventListener('click', function () {
+      if (libraryUI()) libraryUI().addColorsTo('categories', col.catId);
+    });
+
+    var manageBtn = document.createElement('button');
+    manageBtn.className = 'ghost-btn';
+    manageBtn.textContent = 'Manage';
+    manageBtn.addEventListener('click', function () {
+      if (libraryUI()) libraryUI().open('categories', col.catId);
+    });
+
+    var check = miniCheck('Select all in ' + col.name);
+    check.querySelector('input').addEventListener('change', function (e) {
+      setSelection(visibleUidsOf(col), e.target.checked);
+    });
+
+    actions.appendChild(countEl);
+    actions.appendChild(addBtn);
+    actions.appendChild(manageBtn);
+    actions.appendChild(check);
+    head.appendChild(actions);
+    section.appendChild(head);
+
+    var fam = col.families[0];
+    var body = document.createElement('div');
+    body.className = 'family family-own';
+
+    var grid = document.createElement('div');
+    grid.className = 'grid';
+    grid.innerHTML = fam.swatches.map(cardHtml).join('');
+    Array.prototype.forEach.call(grid.children, function (card) {
+      cardEls.set(card.dataset.uid, card);
+      customUids.push(card.dataset.uid);
+    });
+    body.appendChild(grid);
+
+    if (!fam.swatches.length) {
+      var empty = document.createElement('button');
+      empty.className = 'own-empty';
+      empty.innerHTML =
+        '<strong>Nothing in here yet</strong>' +
+        '<span>Add a color by hex or picker, paste a whole palette, or select swatches in the book and save them here.</span>';
+      empty.addEventListener('click', function () {
+        if (libraryUI()) libraryUI().addColorsTo('categories', col.catId);
+      });
+      body.appendChild(empty);
+    }
+
+    section.appendChild(body);
+    famEls.push({
+      fam: fam, el: body, gridEl: grid, custom: true,
+      check: check.querySelector('input'), countEl: null
+    });
+    colEls.set(col.id, { col: col, section: section, check: check.querySelector('input'), countEl: countEl });
+    return section;
+  }
+
+  function renderCustomSections() {
+    var root = $('#custom-collections');
+    root.innerHTML = '';
+    if (!CUSTOM.length) return;
+    var eyebrow = document.createElement('p');
+    eyebrow.className = 'main-eyebrow';
+    eyebrow.textContent = 'Your categories';
+    root.appendChild(eyebrow);
+    CUSTOM.forEach(function (col) { root.appendChild(customSection(col)); });
+  }
+
+  function renderCustomSidebar() {
+    var wrap = $('#side-custom');
+    wrap.innerHTML = '';
+    if (!CUSTOM.length) return;
+    var label = document.createElement('p');
+    label.className = 'side-label';
+    label.textContent = 'Your categories';
+    wrap.appendChild(label);
+
+    CUSTOM.forEach(function (col) {
+      var row = document.createElement('div');
+      row.className = 'side-row';
+
+      var jump = document.createElement('button');
+      jump.className = 'side-expand side-jump';
+      jump.setAttribute('aria-label', 'Jump to ' + col.name);
+      var swatches = col.families[0].swatches;
+      var dots = swatches.slice(0, 3).map(function (s) {
+        return '<i style="background:' + s.hex + '"></i>';
+      }).join('') || '<i class="empty"></i>';
+      jump.innerHTML = '<span class="side-dots">' + dots + '</span>' +
+        '<span class="side-name"></span>';
+      jump.querySelector('.side-name').textContent = col.name;
+      var count = document.createElement('span');
+      count.className = 'side-count';
+      count.textContent = swatches.length;
+      jump.appendChild(count);
+      jump.addEventListener('click', function () { goTo('col-' + col.id); });
+
+      var check = miniCheck('Select all in ' + col.name);
+      check.querySelector('input').addEventListener('change', function (e) {
+        setSelection(visibleUidsOf(col), e.target.checked);
+      });
+
+      row.appendChild(jump);
+      row.appendChild(check);
+      wrap.appendChild(row);
+
+      var entry = colEls.get(col.id);
+      if (entry) {
+        entry.sideCheck = check.querySelector('input');
+        entry.sideCount = count;
+      }
+    });
+  }
+
+  function renderLibraryNav() {
+    var wrap = $('#side-library');
+    var t = LIB.totals();
+    $('#lib-dot').hidden = (t.projects + t.categories) === 0;
+    wrap.innerHTML =
+      '<p class="side-label">Your library</p>' +
+      '<button class="lib-row" data-tab="projects">' +
+        '<span class="lib-row-name">Projects</span>' +
+        '<span class="lib-row-n">' + t.projects + '</span>' +
+      '</button>' +
+      '<button class="lib-row" data-tab="categories">' +
+        '<span class="lib-row-name">Categories</span>' +
+        '<span class="lib-row-n">' + t.categories + '</span>' +
+      '</button>' +
+      '<div class="lib-actions">' +
+        '<button class="ghost-btn" id="lib-new">New</button>' +
+        '<button class="ghost-btn" id="lib-import">Import</button>' +
+      '</div>';
+    $$('#side-library .lib-row').forEach(function (b) {
+      b.addEventListener('click', function () {
+        setDrawer(false);
+        if (libraryUI()) libraryUI().open(b.dataset.tab);
+      });
+    });
+    wrap.querySelector('#lib-new').addEventListener('click', function () {
+      setDrawer(false);
+      if (libraryUI()) libraryUI().createFlow();
+    });
+    wrap.querySelector('#lib-import').addEventListener('click', function () {
+      setDrawer(false);
+      if (libraryUI()) libraryUI().importFlow();
+    });
+  }
+
+  /* Fold the saved categories back into the book. Only the user's own cards
+     are torn down and rebuilt; the built-in tree is left untouched. */
+  function rebuildCustom() {
+    customUids.forEach(function (uid) { cardEls.delete(uid); });
+    customUids = [];
+    famEls = famEls.filter(function (fe) { return !fe.custom; });
+    CUSTOM.forEach(function (col) { colEls.delete(col.id); });
+
+    CUSTOM = LIB.list('categories').map(categoryCollection);
+    rebuildIndex();
+
+    renderCustomSections();
+    renderCustomSidebar();
+    renderLibraryNav();
+    initColPicks();
+
+    // colors that were deleted out from under the selection
+    var stale = [];
+    S.selection.forEach(function (uid) { if (!BY_UID.has(uid)) stale.push(uid); });
+    stale.forEach(function (uid) { S.selection.delete(uid); });
+    if (stale.length) store('sb.sel', Array.from(S.selection));
+
+    // the new cards start unselected — re-apply what survived
+    S.selection.forEach(function (uid) {
+      var card = cardEls.get(uid);
+      if (card) {
+        card.classList.add('selected');
+        card.setAttribute('aria-checked', 'true');
+      }
+    });
+
+    if (S.view === 'flow') renderFlow();
+    refilter();
+    requestAnimationFrame(setIntrinsicSizes);
+  }
+
   /* ---------------- render: sidebar ---------------- */
 
   function renderSidebar() {
     var nav = $('#side-nav');
-    COLLECTIONS.forEach(function (col) {
+    BUILTIN.forEach(function (col) {
       var group = document.createElement('div');
       group.className = 'side-group';
 
@@ -459,9 +742,8 @@
   // bucket, then saturation band (vivid ramp, soft ramp, muted ramp),
   // then lightness tint -> shade. Bands keep each ramp reading as one
   // clean gradient instead of interleaving vivid and muted chips.
-  function buildFlowOrder() {
-    if (flowOrder) return flowOrder;
-    flowOrder = ALL.map(function (r) {
+  function flowSortRecords(list) {
+    return list.map(function (r) {
       var rgb = hexToRgb(r.hex);
       var hsl = rgbToHsl(rgb[0], rgb[1], rgb[2]);
       var isGray = hsl[1] < 0.09 || hsl[2] < 0.03 || hsl[2] > 0.98;
@@ -480,6 +762,10 @@
       if (b.l !== a.l) return b.l - a.l;
       return b.s - a.s;
     }).map(function (x) { return x.rec; });
+  }
+
+  function buildFlowOrder() {
+    if (!flowOrder) flowOrder = flowSortRecords(ALL);
     return flowOrder;
   }
 
@@ -643,6 +929,9 @@
           if (S.selection.has(s.uid)) selected++;
         }
       });
+      // a custom category has no family header of its own — its counts and
+      // checkbox live on the section head, which the loop above already did
+      if (fe.custom) return;
       fe.countEl.textContent = selected > 0 ? selected + ' / ' + visible : String(visible);
       fe.check.checked = visible > 0 && selected === visible;
       fe.check.indeterminate = selected > 0 && selected < visible;
@@ -665,6 +954,15 @@
   /* card interactions (event delegation over both views) */
 
   $('#main').addEventListener('click', function (e) {
+    var tool = e.target.closest('.card-tool');
+    if (tool) {
+      e.stopPropagation();
+      var rec = BY_UID.get(tool.closest('.card').dataset.uid);
+      if (!rec || !libraryUI()) return;
+      if (tool.classList.contains('card-edit')) libraryUI().editColor('categories', rec.catId, rec.colorId);
+      else libraryUI().removeColor('categories', rec.catId, rec.colorId);
+      return;
+    }
     var zoomBtn = e.target.closest('.zoom');
     if (zoomBtn) {
       openSingle(zoomBtn.closest('.card').dataset.uid);
@@ -719,6 +1017,9 @@
   }
 
   /* selection bar buttons */
+  $('#sel-save').addEventListener('click', function () {
+    if (libraryUI()) libraryUI().saveSelection(selectedRecords());
+  });
   $('#sel-clear').addEventListener('click', clearSelection);
   $('#sel-print').addEventListener('click', function () { openPrintModal('selected'); });
   $('#sel-export').addEventListener('click', function () { openPrintModal('selected'); });
@@ -803,15 +1104,21 @@
       });
     }
 
+    var filtering = !!S.query || stepsActive();
     famEls.forEach(function (fe) {
       var vis = fe.fam.swatches.some(function (s) { return S.visible.has(s.uid); });
+      if (fe.custom && !filtering) vis = true;
       fe.el.style.display = vis ? '' : 'none';
     });
     COLLECTIONS.forEach(function (col) {
       var entry = colEls.get(col.id);
+      if (!entry) return;
       var vis = col.families.some(function (f) {
         return f.swatches.some(function (s) { return S.visible.has(s.uid); });
       });
+      // an empty category still shows itself (and its "add colors" prompt)
+      // while nothing is being filtered — otherwise it would look lost
+      if (col.custom && !filtering) vis = true;
       entry.section.style.display = vis ? '' : 'none';
     });
 
@@ -995,13 +1302,18 @@
     openCompareWith(uids, 'Compare');
   }
 
-  // Also serves single-color full-screen view (uids.length === 1).
   function openCompareWith(uids, title) {
+    openCompareRecords(uids.map(function (uid) { return BY_UID.get(uid); })
+      .filter(Boolean), title);
+  }
+
+  /* Takes plain { name, hex } records, so a project's colors — which are not
+     part of the book — can be compared exactly like swatches.
+     Also serves the single-color full-screen view (recs.length === 1). */
+  function openCompareRecords(recs, title) {
     var strips = $('#cmp-strips');
     strips.innerHTML = '';
-    uids.forEach(function (uid) {
-      var rec = BY_UID.get(uid);
-      if (!rec) return;
+    recs.forEach(function (rec) {
       var strip = document.createElement('div');
       strip.className = 'cmp-strip';
       strip.style.background = rec.hex;
@@ -1019,8 +1331,8 @@
       strips.appendChild(strip);
     });
     $('#cmp-title').textContent = title || 'Compare';
-    $('#cmp-meta').textContent = uids.length === 1 ? '' : uids.length + ' colors';
-    cmp.classList.toggle('single', uids.length === 1);
+    $('#cmp-meta').textContent = recs.length === 1 ? '' : recs.length + ' colors';
+    cmp.classList.toggle('single', recs.length === 1);
     cmpLastFocus = document.activeElement;
     cmp.classList.add('show');
     $('#cmp-back').focus();
@@ -1091,13 +1403,20 @@
     });
   });
 
+  function currentGeom() {
+    return window.RangPaper.geometry(S.paper, S.landscape, S.density);
+  }
+
   function getOpts() {
     var pickedCols = $$('#col-picks input:checked').map(function (i) { return i.value; });
+    var geom = currentGeom();
     return {
       scope: getScope(),
       order: getOrder(),
       pickedCols: pickedCols,
-      perPage: parseInt(($('#density-seg input[name="density"]:checked') || {}).value || '24', 10),
+      projectId: ($('#project-picks input:checked') || {}).value || '',
+      geom: geom,
+      perPage: geom.perPage,
       newPagePerCollection: $('#opt-newpage').checked,
       showHeaders: $('#opt-headers').checked,
       showNames: $('#opt-names').checked,
@@ -1105,8 +1424,110 @@
     };
   }
 
+  /* ---------------- paper size, orientation & density ---------------- */
+
+  /* A pill per paper size, drawn to relative scale so the choice reads at a
+     glance: the A5 glyph really is half the A3 one. */
+  function initPaperPicks() {
+    var wrap = $('#paper-picks');
+    var longest = window.RangPaper.PAPERS.reduce(function (m, p) {
+      return Math.max(m, p.h);
+    }, 1);
+    window.RangPaper.PAPERS.forEach(function (p) {
+      var gw = (16 * p.w / longest).toFixed(1);
+      var gh = (16 * p.h / longest).toFixed(1);
+      var label = document.createElement('label');
+      label.className = 'pick paper-pick';
+      label.title = p.name + ' — ' + p.note;
+      label.innerHTML =
+        '<input type="radio" name="paper" value="' + p.id + '"' +
+          (p.id === S.paper ? ' checked' : '') + '>' +
+        '<span class="pick-face">' +
+          '<span class="paper-glyph" style="--gw:' + gw + 'px;--gh:' + gh + 'px"></span>' +
+          escapeHtml(p.name) +
+        '</span>';
+      label.querySelector('input').addEventListener('change', function () {
+        setPaper(p.id, S.landscape);
+      });
+      wrap.appendChild(label);
+    });
+  }
+
+  /* The density icon is the real grid at the real page proportions, so it
+     also shows what the orientation did. */
+  function renderDensitySeg() {
+    var seg = $('#density-seg');
+    seg.innerHTML = '';
+    window.RangPaper.DENSITIES.forEach(function (den) {
+      var g = window.RangPaper.geometry(S.paper, S.landscape, den.id);
+      var w = g.landscape ? 32 : 32 * g.pageW / g.pageH;
+      var h = g.landscape ? 32 * g.pageH / g.pageW : 32;
+      var label = document.createElement('label');
+      label.className = 'seg-opt';
+      label.innerHTML =
+        '<input type="radio" name="density" value="' + den.id + '"' +
+          (den.id === S.density ? ' checked' : '') + '>' +
+        '<span class="seg-face">' +
+          '<span class="seg-ico" style="width:' + w.toFixed(1) + 'px;height:' + h.toFixed(1) + 'px;' +
+            'gap:' + (Math.max(g.cols, g.rows) > 8 ? 1 : 2) + 'px;' +
+            'grid-template-columns:repeat(' + g.cols + ',1fr);' +
+            'grid-template-rows:repeat(' + g.rows + ',1fr)">' +
+            new Array(g.perPage + 1).join('<i></i>') +
+          '</span>' +
+          '<span class="seg-name">' + den.name + '</span>' +
+          '<span class="seg-sub">' + g.perPage + ' per sheet</span>' +
+        '</span>';
+      label.querySelector('input').addEventListener('change', function () {
+        S.density = den.id;
+        store('sb.density', den.id);
+        refreshDocStats();
+      });
+      seg.appendChild(label);
+    });
+  }
+
+  function setPaper(paperId, landscape) {
+    S.paper = paperId;
+    S.landscape = !!landscape;
+    store('sb.paper', paperId);
+    store('sb.landscape', S.landscape);
+    $('#paper-picks').classList.toggle('landscape', S.landscape);
+    $$('#paper-picks input').forEach(function (i) { i.checked = i.value === S.paper; });
+    $$('#orient-seg button').forEach(function (b) {
+      b.classList.toggle('on', (b.dataset.orient === 'landscape') === S.landscape);
+    });
+    renderDensitySeg();
+    refreshDocStats();
+  }
+
+  /* Sheet size and margins reach the stylesheet as custom properties; the
+     @page rule has to be rewritten by hand because it cannot read them. */
+  function applyPaperVars(geom) {
+    var root = $('#print-root');
+    root.style.setProperty('--sheet-w', geom.pageW + 'mm');
+    root.style.setProperty('--sheet-h', geom.pageH + 'mm');
+    root.style.setProperty('--sheet-pt', geom.margins.top + 'mm');
+    root.style.setProperty('--sheet-px', geom.margins.left + 'mm');
+    root.style.setProperty('--sheet-pb', geom.margins.bottom + 'mm');
+    $('#page-size').textContent =
+      '@page { size: ' + geom.pageW + 'mm ' + geom.pageH + 'mm; margin: 0; }';
+  }
+
   function swatchesForScope(opts) {
     var out = [];
+
+    // a project is not part of the book, so it supplies its own records
+    if (opts.scope === 'project') {
+      var project = LIB.get('projects', opts.projectId);
+      if (!project || !project.colors.length) return out;
+      return [{
+        colName: project.name,
+        swatches: project.colors.map(function (c) {
+          return { uid: 'proj:' + project.id + ':' + c.id, name: c.name, hex: c.hex };
+        })
+      }];
+    }
+
     COLLECTIONS.forEach(function (col) {
       if (opts.scope === 'collections' && opts.pickedCols.indexOf(col.id) === -1) return;
       var list = [];
@@ -1128,14 +1549,16 @@
 
     if (opts.order === 'flow') {
       // one continuous hue/shade gradient across everything in scope,
-      // each unique color printed once (matches the Flow view)
-      var inScope = new Set();
+      // each unique color printed once (matches the Flow view). Sorting the
+      // scoped records rather than filtering the global order lets project
+      // colors — which are not in the book — flow too.
+      var scoped = [];
       groups.forEach(function (g) {
-        g.swatches.forEach(function (s) { inScope.add(s.uid); });
+        g.swatches.forEach(function (s) { scoped.push(s); });
       });
       var seenHex = new Set();
-      var stream = buildFlowOrder().filter(function (r) {
-        if (!inScope.has(r.uid) || seenHex.has(r.hex)) return false;
+      var stream = flowSortRecords(scoped).filter(function (r) {
+        if (seenHex.has(r.hex)) return false;
         seenHex.add(r.hex);
         return true;
       });
@@ -1239,7 +1662,8 @@
     } else {
       $('#doc-stats').innerHTML =
         '<strong>' + swatches + '</strong> swatches &middot; <strong>' +
-        doc.pages.length + '</strong> A4 sheet' + (doc.pages.length === 1 ? '' : 's');
+        doc.pages.length + '</strong> ' + escapeHtml(doc.opts.geom.paperName) +
+        ' sheet' + (doc.pages.length === 1 ? '' : 's');
       setActionEnabled(true);
     }
   }
@@ -1252,8 +1676,6 @@
 
   /* ---------------- sheet DOM rendering ---------------- */
 
-  var DENSITY_GRID = { 12: [3, 4], 24: [4, 6], 40: [5, 8] };
-
   /* Sheet footer credit. js/pdf.js builds the same line from its appName option,
      so keep the two in step — the printed sheet and the PDF must read alike. */
   var APP_NAME = 'Rang';
@@ -1262,7 +1684,8 @@
   function renderSheets(doc) {
     var root = $('#print-root');
     root.innerHTML = '';
-    var grid = DENSITY_GRID[doc.opts.perPage] || DENSITY_GRID[24];
+    var geom = doc.opts.geom;
+    applyPaperVars(geom);
     var frag = document.createDocumentFragment();
 
     doc.pages.forEach(function (page) {
@@ -1276,14 +1699,16 @@
 
       var sheet = document.createElement('section');
       sheet.className = 'sheet' + (doc.opts.showHeaders ? '' : ' no-chrome');
-      sheet.dataset.density = String(doc.opts.perPage);
-      sheet.style.setProperty('--cols', grid[0]);
-      sheet.style.setProperty('--rows', grid[1]);
+      sheet.dataset.density = geom.densityId;
+      sheet.style.setProperty('--cols', geom.cols);
+      sheet.style.setProperty('--rows', geom.rows);
+      sheet.style.setProperty('--gap', geom.gap + 'mm');
 
       var head = document.createElement('header');
       head.className = 'sheet-head';
-      head.innerHTML = '<span class="sheet-title"></span><span class="sheet-sub">A4 &middot; 210 &times; 297 mm</span>';
+      head.innerHTML = '<span class="sheet-title"></span><span class="sheet-sub"></span>';
       head.querySelector('.sheet-title').textContent = page.title;
+      head.querySelector('.sheet-sub').textContent = geom.subLabel;
       sheet.appendChild(head);
 
       var g = document.createElement('div');
@@ -1321,6 +1746,7 @@
     });
     S.lastOpts = doc.opts;
     S.lastTotal = doc.total;
+    S.lastGeom = geom;
   }
 
   /* ---------------- modal ---------------- */
@@ -1328,10 +1754,28 @@
   var modal = $('#print-modal');
   var lastFocus = null;
 
-  function openPrintModal(scope) {
+  function openPrintModal(scope, extra) {
     lastFocus = document.activeElement;
+    extra = extra || {};
+
+    initProjectPicks();
+    var projects = LIB.list('projects');
+    $('#choice-project').classList.toggle('disabled', !projects.length);
+    $('#choice-project').querySelector('input').disabled = !projects.length;
+    $('#sub-project').textContent = projects.length
+      ? projects.length + ' project' + (projects.length === 1 ? '' : 's') + ' saved'
+      : 'No projects yet - save a selection into one first';
+
     if (scope === 'selected' && S.selection.size > 0) {
       modal.querySelector('input[value="selected"]').checked = true;
+    }
+    if (scope === 'project' && extra.projectId) {
+      $$('#project-picks input').forEach(function (i) { i.checked = i.value === extra.projectId; });
+      modal.querySelector('input[value="project"]').checked = true;
+    }
+    if (scope === 'collections' && extra.collectionId) {
+      $$('#col-picks input').forEach(function (i) { i.checked = i.value === extra.collectionId; });
+      modal.querySelector('input[value="collections"]').checked = true;
     }
     $('#sub-all').textContent = 'All ' + ALL.length + ' swatches in the book';
     // default print order follows the current browsing view
@@ -1348,28 +1792,70 @@
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 
+  $('#open-library').addEventListener('click', function () {
+    if (libraryUI()) libraryUI().open();
+  });
   $('#open-print').addEventListener('click', function () { openPrintModal(); });
   $('#modal-close').addEventListener('click', closePrintModal);
   modal.addEventListener('mousedown', function (e) {
     if (e.target === modal) closePrintModal();
   });
 
-  (function initColPicks() {
+  $$('#orient-seg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      setPaper(S.paper, b.dataset.orient === 'landscape');
+    });
+  });
+
+  /* Rebuilt whenever the library changes, so a new category is immediately
+     printable. Ticks that survive the rebuild are restored. */
+  function initColPicks() {
     var wrap = $('#col-picks');
+    var wasChecked = {};
+    $$('#col-picks input:checked').forEach(function (i) { wasChecked[i.value] = true; });
+    wrap.innerHTML = '';
     COLLECTIONS.forEach(function (col) {
       var label = document.createElement('label');
-      label.className = 'pick';
+      label.className = 'pick' + (col.custom ? ' pick-own' : '');
       label.innerHTML =
-        '<input type="checkbox" value="' + col.id + '">' +
-        '<span class="pick-face">' + escapeHtml(col.name) + ' <span class="pick-n">' + col.count + '</span></span>';
+        '<input type="checkbox" value="' + escapeHtml(col.id) + '"' +
+          (wasChecked[col.id] ? ' checked' : '') + '>' +
+        '<span class="pick-face">' + escapeHtml(col.name) +
+        ' <span class="pick-n">' + col.families.reduce(function (n, f) {
+          return n + f.swatches.length;
+        }, 0) + '</span></span>';
       label.querySelector('input').addEventListener('change', refreshDocStats);
       wrap.appendChild(label);
     });
-  })();
+  }
+
+  /* One more scope for the print dialog: a saved project. */
+  function initProjectPicks() {
+    var wrap = $('#project-picks');
+    var current = ($('#project-picks input:checked') || {}).value;
+    var projects = LIB.list('projects');
+    wrap.innerHTML = '';
+    if (!projects.length) {
+      wrap.innerHTML = '<p class="pick-empty">No projects yet — save a selection into one first.</p>';
+      return;
+    }
+    projects.forEach(function (p, i) {
+      var label = document.createElement('label');
+      label.className = 'pick pick-own';
+      var on = current ? p.id === current : i === 0;
+      label.innerHTML =
+        '<input type="radio" name="projectpick" value="' + escapeHtml(p.id) + '"' + (on ? ' checked' : '') + '>' +
+        '<span class="pick-face">' + escapeHtml(p.name) +
+        ' <span class="pick-n">' + p.colors.length + '</span></span>';
+      label.querySelector('input').addEventListener('change', refreshDocStats);
+      wrap.appendChild(label);
+    });
+  }
 
   function syncScopeUI() {
     var scope = getScope();
     $('#col-picks').classList.toggle('show', scope === 'collections');
+    $('#project-picks').classList.toggle('show', scope === 'project');
     $$('#scope-list .choice').forEach(function (c) {
       var input = c.querySelector('input');
       c.classList.toggle('checked', input.checked);
@@ -1391,7 +1877,7 @@
     var scroll = $('#pv-scroll');
     var mmPx = 96 / 25.4;
     var avail = scroll.clientWidth - 56;
-    var z = avail / (210 * mmPx);
+    var z = avail / ((S.lastGeom ? S.lastGeom.pageW : 210) * mmPx);
     return Math.max(0.25, Math.min(1, Math.round(z * 100) / 100));
   }
 
@@ -1409,7 +1895,8 @@
     pv.classList.add('show');
     setZoom(fitZoom());
     $('#pv-meta').textContent =
-      doc.pages.length + ' sheet' + (doc.pages.length === 1 ? '' : 's') + ' - A4 portrait';
+      doc.pages.length + ' sheet' + (doc.pages.length === 1 ? '' : 's') + ' - ' +
+      doc.opts.geom.paperName + (doc.opts.geom.landscape ? ' landscape' : ' portrait');
     $('#pv-scroll').scrollTop = 0;
     $('#pv-back').focus();
     return true;
@@ -1442,14 +1929,15 @@
 
   function exportCurrent() {
     if (!S.lastPages || !S.lastPages.length) return;
+    var geom = S.lastGeom || currentGeom();
     var kb = window.SwatchPDF.downloadPDF(S.lastPages, {
-      perPage: S.lastOpts.perPage,
+      geom: geom,
       showNames: S.lastOpts.showNames,
       showHeaders: S.lastOpts.showHeaders,
       totalSheets: S.lastTotal,
       appName: APP_NAME,
       brandLine: BRAND_LINE
-    }, 'rang-a4.pdf');
+    }, 'rang-' + geom.slug + '.pdf');
     toast('PDF exported - ' + S.lastPages.length + ' sheet' + (S.lastPages.length === 1 ? '' : 's') +
       ' (' + Math.max(1, Math.round(kb / 1024)) + ' KB)');
   }
@@ -1463,8 +1951,9 @@
   // fall back to "everything" so the paper never comes out blank.
   window.addEventListener('beforeprint', function () {
     if (!$('#print-root').children.length) {
+      var geom = currentGeom();
       var opts = {
-        scope: 'all', order: 'catalog', pickedCols: [], perPage: 24,
+        scope: 'all', order: 'catalog', pickedCols: [], geom: geom, perPage: geom.perPage,
         newPagePerCollection: true, showHeaders: true, showNames: true, range: ''
       };
       var pages = buildPages(opts);
@@ -1481,11 +1970,14 @@
   }
 
   document.addEventListener('keydown', function (e) {
-    // trap Tab inside whichever layer is on top (compare > preview > modal)
+    // trap Tab inside whichever layer is on top. The picker and the library's
+    // own dialogs sit above this and stop the event themselves.
     if (e.key === 'Tab') {
+      var lib = $('#lib-overlay');
       var scope = cmp.classList.contains('show') ? cmp
         : pv.classList.contains('show') ? pv
-        : (modal.classList.contains('show') ? modal : null);
+        : modal.classList.contains('show') ? modal
+        : (lib && lib.classList.contains('show') ? lib : null);
       if (scope) {
         var els = focusablesIn(scope);
         if (!els.length) return;
@@ -1498,7 +1990,9 @@
       return;
     }
     if (e.key === 'Escape') {
+      if (window.RangPicker && window.RangPicker.isOpen()) return;
       if (!stepsPop.hidden) { openStepsPop(false); stepsBtn.focus(); return; }
+      if (libraryUI() && libraryUI().isOpen()) { libraryUI().close(); return; }
       if (cmp.classList.contains('show')) { closeCompare(); return; }
       if (pv.classList.contains('show')) { closePreview(); return; }
       if (modal.classList.contains('show')) { closePrintModal(); return; }
@@ -1514,13 +2008,15 @@
       openPrintModal();
       return;
     }
-    if (e.key === '/' && !e.metaKey && !e.ctrlKey) {
+    if ((e.key === '/' || e.key === 'l' || e.key === 'L') && !e.metaKey && !e.ctrlKey && !e.altKey) {
       if (cmp.classList.contains('show') || pv.classList.contains('show') || modal.classList.contains('show')) return;
+      if (window.RangPicker && window.RangPicker.isOpen()) return;
+      if (libraryUI() && libraryUI().isOpen()) return;
       var tag = (document.activeElement && document.activeElement.tagName) || '';
-      if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
-        e.preventDefault();
-        searchInput.focus();
-      }
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      e.preventDefault();
+      if (e.key === '/') searchInput.focus();
+      else if (libraryUI()) libraryUI().open();
     }
   });
 
@@ -1543,6 +2039,72 @@
     $('#menu-btn').focus();
   });
 
+  /* ---------------- bridge for the library UI ---------------- */
+
+  function selectedRecords() {
+    return Array.from(S.selection)
+      .map(function (uid) { return BY_UID.get(uid); })
+      .filter(Boolean);
+  }
+
+  /* Channel table for nearestSwatch: re-parsing 8,808 hexes on every pointer
+     move while dragging in the picker is the one thing that would make it
+     feel heavy, so the parse happens once per index rebuild instead. */
+  var nearIndex = null;
+  function buildNearIndex() {
+    nearIndex = new Array(ALL.length);
+    for (var i = 0; i < ALL.length; i++) {
+      var rgb = hexToRgb(ALL[i].hex);
+      nearIndex[i] = rgb;
+    }
+    return nearIndex;
+  }
+
+  /** The closest color in the whole book — powers the picker's "snap to". */
+  function nearestSwatch(hex) {
+    if (!ALL.length) return null;
+    var idx = nearIndex && nearIndex.length === ALL.length ? nearIndex : buildNearIndex();
+    var t = hexToRgb(hex);
+    var best = -1, bestD = Infinity;
+    for (var i = 0; i < idx.length; i++) {
+      var c = idx[i];
+      var rm = (t[0] + c[0]) / 2;
+      var dr = t[0] - c[0], dg = t[1] - c[1], db = t[2] - c[2];
+      // squared weighted distance — the ranking is all that matters here
+      var d = (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
+      if (d < bestD) { bestD = d; best = i; if (d === 0) break; }
+    }
+    if (best < 0) return null;
+    var rec = ALL[best];
+    return { name: rec.name, hex: rec.hex, colName: rec.colName, uid: rec.uid };
+  }
+
+  window.RangApp = {
+    toast: toast,
+    copyValue: function (hex) { copyText(copyValue(hex), hex); },
+    formatValue: formatValue,
+    nearest: nearestSwatch,
+    selectedRecords: selectedRecords,
+    clearSelection: clearSelection,
+    compare: openCompareRecords,
+    openPrint: openPrintModal,
+    goToCategory: function (catId) { goTo('col-cat:' + catId); },
+    categoryCount: function () { return CUSTOM.length; }
+  };
+
+  /* Any change to the library — from any part of the UI — folds straight
+     back into the book. Project edits never touch the catalog, so they skip
+     the rebuild and only refresh what actually shows them. */
+  LIB.subscribe(function (detail) {
+    if (detail && detail.kind === 'projects') {
+      renderLibraryNav();
+      initProjectPicks();
+      refreshDocStats();
+      return;
+    }
+    rebuildCustom();
+  });
+
   /* ---------------- boot ---------------- */
 
   function boot() {
@@ -1554,9 +2116,19 @@
     note.style.display = 'none';
     renderMain();
     renderSidebar();
+    rebuildCustom();                // folds the saved categories into the book
 
     var savedMode = load('sb.mode', 'hex');
     if (savedMode !== 'hex') setValueMode(savedMode);
+
+    var savedPaper = load('sb.paper', 'a4');
+    if (window.RangPaper.get(savedPaper)) S.paper = savedPaper;
+    var savedDensity = load('sb.density', 'standard');
+    if (window.RangPaper.DENSITIES.some(function (d) { return d.id === savedDensity; })) {
+      S.density = savedDensity;
+    }
+    initPaperPicks();
+    setPaper(S.paper, load('sb.landscape', false) === true);
 
     var savedSel = load('sb.sel', []);
     if (Array.isArray(savedSel) && savedSel.length) {
