@@ -743,7 +743,14 @@
   var resizeTimer = null;
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(setIntrinsicSizes, 200);
+    resizeTimer = setTimeout(function () {
+      setIntrinsicSizes();
+      /* Zoom is fitted once, when the preview opens. Rotating a phone after that
+         left a sheet wider than the new viewport, so the preview scrolled
+         sideways - refit while it is open, but only while the user has not
+         chosen a zoom of their own. */
+      if (pv.classList.contains('show') && !S.zoomTouched) setZoom(fitZoom());
+    }, 200);
   });
 
   // aria-expanded reflects whatever the button controls at this width:
@@ -1996,6 +2003,7 @@
     renderSheets(doc);
     pvLastFocus = document.activeElement;
     pv.classList.add('show');
+    S.zoomTouched = false;            // a fresh preview refits on rotation again
     setZoom(fitZoom());
     $('#pv-meta').textContent =
       doc.pages.length + ' sheet' + (doc.pages.length === 1 ? '' : 's') + ' - ' +
@@ -2015,8 +2023,9 @@
 
   $('#btn-preview').addEventListener('click', openPreview);
   $('#pv-back').addEventListener('click', closePreview);
-  $('#pv-zoom-in').addEventListener('click', function () { setZoom(S.zoom + 0.1); });
-  $('#pv-zoom-out').addEventListener('click', function () { setZoom(S.zoom - 0.1); });
+  // a chosen zoom is the user's: stop refitting it on resize
+  $('#pv-zoom-in').addEventListener('click', function () { S.zoomTouched = true; setZoom(S.zoom + 0.1); });
+  $('#pv-zoom-out').addEventListener('click', function () { S.zoomTouched = true; setZoom(S.zoom - 0.1); });
 
   // Print and Export always go through the preview so you can see
   // exactly what is about to come out.

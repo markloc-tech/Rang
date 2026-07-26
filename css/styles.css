@@ -175,6 +175,14 @@ input { font: inherit; color: inherit; }
   color: var(--muted);
 }
 .search-clear:hover { background: var(--hover); color: var(--fg); }
+/* 24px is fine for a cursor but not for a fingertip, and on a phone this is the
+   only way to clear a search - there is no Escape key. Extend the hit box to
+   40x40 without moving the glyph. */
+.search-clear::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+}
 .search-wrap.has-value .search-clear { display: flex; }
 
 .topbar-spacer { flex: 1; }
@@ -814,14 +822,25 @@ html[data-theme="dark"] #theme-toggle .sun { display: none; }
   display: none;
   align-items: flex-start;
   justify-content: center;
-  overflow-y: auto;
+  /* The dialog caps its own height and scrolls its own body, so the backdrop must
+     not be a scroll container: on a classic-scrollbar engine it reserved a 15px
+     gutter, which pushed the bottom sheet off the right edge of a 320px phone. */
+  overflow: hidden;
   padding: 6vh 16px 40px;
 }
 .modal-backdrop.show { display: flex; }
 
+/* The dialog is taller than a phone screen (and than a short laptop window), so
+   it is capped and only the body scrolls. Letting the whole card grow instead
+   pushed the footer - which holds Preview / Export PDF / Print - hundreds of
+   pixels below the fold, so on a phone the actions looked simply missing. */
 .modal {
   width: 620px;
   max-width: 100%;
+  max-height: calc(100vh - 6vh - 40px);       /* backdrop padding, older browsers */
+  max-height: calc(100dvh - 6vh - 40px);      /* dvh: excludes the phone's own chrome */
+  display: flex;
+  flex-direction: column;
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -833,12 +852,26 @@ html[data-theme="dark"] #theme-toggle .sun { display: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 18px 22px 14px;
+  flex: none;
 }
-.modal-head h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+/* The picker and the library dialogs interpolate a user-supplied name into this
+   title (up to 60 chars), and .modal clips its overflow - without truncation a
+   long name pushed the close button out of the dialog entirely. */
+.modal-head h2 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .modal-close {
   width: 32px;
   height: 32px;
+  flex: none;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -847,7 +880,14 @@ html[data-theme="dark"] #theme-toggle .sun { display: none; }
 }
 .modal-close:hover { background: var(--hover); color: var(--fg); }
 
-.modal-body { padding: 0 22px 6px; }
+.modal-body {
+  padding: 0 22px 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;              /* no scroll chaining to the page behind */
+  scrollbar-width: thin;
+}
 
 .field { margin-bottom: 20px; }
 .field-label {
@@ -1006,17 +1046,22 @@ html[data-theme="dark"] #theme-toggle .sun { display: none; }
 .seg .seg-sub { font-size: 11px; color: var(--muted); margin-top: -4px; }
 
 /* toggle switch rows */
+/* A <label> in the markup: the row itself is the hit area (~58px tall, full
+   width) rather than just the 38x22 track, which was half the 44px touch
+   guideline and left the words next to it dead. */
 .switch-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   padding: 9px 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 .switch-row + .switch-row { border-top: 1px solid var(--line); }
 .switch-row .sw-title { font-weight: 550; font-size: 13.5px; }
 .switch-row .sw-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
-.switch { position: relative; flex: none; cursor: pointer; }
+.switch { position: relative; flex: none; }
 .switch input { position: absolute; opacity: 0; pointer-events: none; }
 .switch .track {
   display: block;
@@ -1067,7 +1112,8 @@ html[data-theme="dark"] #theme-toggle .sun { display: none; }
   gap: 10px;
   padding: 14px 22px 18px;
   border-top: 1px solid var(--line);
-  margin-top: 8px;
+  flex: none;                                /* pinned: the actions stay reachable */
+  background: var(--bg);
 }
 .doc-stats {
   flex: 1;
@@ -1811,6 +1857,9 @@ html[data-theme="dark"] #theme-toggle .sun { display: none; }
   flex: none;
 }
 .pv-title { font-weight: 700; font-size: 14.5px; }
+/* Export PDF + Print travel together: on desktop this reads exactly like two
+   buttons in the bar, on a phone the pair takes a row of its own. */
+.pv-actions { display: flex; align-items: center; gap: 12px; }
 .pv-meta { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .pv-zoom {
   display: flex;
@@ -2150,6 +2199,20 @@ body.flow-mode #collections { display: none; }
 .cmp-strip:hover .cmp-x,
 .cmp-strip .cmp-x:focus-visible { opacity: 1; }
 .cmp-strip .cmp-x:hover { background: rgba(128, 128, 128, 0.3); }
+/* Touch: opacity 0 still takes taps, so this was an invisible remove button in
+   the corner of every strip - a tap meant to copy the hex deleted the colour
+   instead. Show it, and give it a real target. */
+@media (hover: none) {
+  .cmp-strip .cmp-x {
+    opacity: 1;
+    width: 40px;
+    height: 40px;
+    top: 6px;
+    right: 6px;
+    border-radius: 12px;
+    background: rgba(128, 128, 128, 0.22);
+  }
+}
 
 @media print {
   .cmp-overlay { display: none !important; }
@@ -2289,6 +2352,17 @@ body.flow-mode #collections { display: none; }
   .lib-detail { padding: 18px 16px 60px; }
   .lib-bar { padding: 8px 12px; gap: 8px; }
   .lib-bar .pv-title { display: none; }
+
+  /* .lib-tools wraps, and when "More" lands alone on a row its right-anchored
+     208px menu started ~118px off the left edge of a 320px screen. Anchor it to
+     the left instead and clamp it to the viewport. */
+  .lib-menu {
+    right: auto;
+    left: 0;
+    min-width: 0;
+    width: max-content;
+    max-width: calc(100vw - 32px);
+  }
 }
 
 /* Small-screen fixes for every floating surface: nothing may overflow. */
@@ -2305,6 +2379,68 @@ body.flow-mode #collections { display: none; }
   .sel-bar .sel-count { margin-right: 3px; font-size: 12px; }
   .sel-bar button { padding: 0 10px; font-size: 12.5px; }
   .sel-bar .divider { margin: 0 1px; }
+
+  /* The export dialog becomes a bottom sheet: full width, anchored to the
+     bottom edge, capped so the pinned footer is always on screen and only the
+     body scrolls. */
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .modal {
+    width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    border-radius: 18px 18px 0 0;
+    border-bottom: none;
+  }
+  .modal-head { padding: 14px 16px 10px; }
+  .modal-body { padding: 0 16px 6px; }
+  .modal-foot {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+  .modal-foot .doc-stats { flex: 1 1 100%; }
+  .modal-foot .ghost-btn,
+  .modal-foot .primary-btn { flex: 1 1 auto; justify-content: center; }
+  .range-wrap { flex-wrap: wrap; }
+
+  /* Scope rows: title over sub instead of one long line that wraps raggedly
+     around the radio. */
+  .choice { align-items: flex-start; }
+  .choice-sub { display: block; margin-top: 2px; }
+
+  /* Preview and compare top bars: two tidy rows - the document line truncates
+     instead of running into the right edge, and the actions get their own row
+     rather than wrapping one at a time. */
+  .pv-bar,
+  .cmp-bar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 52px;
+    padding: 8px 12px;
+    row-gap: 8px;
+    gap: 8px;
+  }
+  .pv-bar .pv-title { display: none; }      /* the meta line already names it */
+  .pv-meta,
+  .cmp-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pv-bar .pv-zoom,
+  .cmp-bar .topbar-spacer { margin-left: 0; }
+  .pv-bar .pv-zoom { flex: none; }
+  /* basis 100% forces the pair onto its own line at every phone width, so the
+     bar is always exactly two rows: [back + document + zoom] then [actions] */
+  .pv-actions { flex: 1 1 100%; gap: 8px; }
+  .pv-actions .ghost-btn,
+  .pv-actions .primary-btn { flex: 1 1 auto; justify-content: center; }
+  .pv-scroll { padding: 18px 10px 60px; }
 }
 
 /* A 320px phone cannot hold "6 selected" plus three actions plus the close
@@ -2313,29 +2449,6 @@ body.flow-mode #collections { display: none; }
 @media (max-width: 380px) {
   .sel-bar { padding-left: 11px; }
   .sel-bar .sel-word { display: none; }
-
-  /* print dialog: footer wraps, buttons share the row */
-  .modal-foot { flex-wrap: wrap; gap: 8px; }
-  .modal-foot .doc-stats { flex: 1 1 100%; }
-  .modal-foot .ghost-btn,
-  .modal-foot .primary-btn { flex: 1 1 auto; justify-content: center; }
-  .modal-head { padding: 14px 16px 10px; }
-  .modal-body { padding: 0 16px 6px; }
-  .modal-foot { padding: 12px 16px 14px; }
-  .range-wrap { flex-wrap: wrap; }
-
-  /* preview + compare top bars wrap instead of overflowing */
-  .pv-bar,
-  .cmp-bar {
-    flex-wrap: wrap;
-    height: auto;
-    min-height: 52px;
-    padding: 8px 10px;
-    row-gap: 8px;
-    gap: 8px;
-  }
-  .pv-meta { flex: 1 1 auto; }
-  .pv-zoom { margin-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

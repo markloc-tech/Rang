@@ -13,7 +13,7 @@
        being looked at - full screen first, then the last swatch picked, else the
        theme background. Light is the default theme, so light is the start value. -->
   <meta name="theme-color" id="theme-color" content="#ffffff">
-  <link rel="stylesheet" href="css/styles.css?v=23">
+  <link rel="stylesheet" href="css/styles.css?v=27">
   <!-- @page cannot read custom properties, so app.js rewrites this rule
        whenever the paper size or orientation changes -->
   <style id="page-size"></style>
@@ -246,27 +246,29 @@
         <div class="field">
           <span class="field-label">Options</span>
           <div>
-            <div class="switch-row">
+            <!-- the row is the label, so the whole 58px band toggles the switch
+                 instead of only the 38x22 track -->
+            <label class="switch-row">
               <span>
                 <span class="sw-title">Start each collection on a new sheet</span>
                 <span class="sw-sub" style="display:block">Pantone-style: one palette per section</span>
               </span>
-              <label class="switch"><input type="checkbox" id="opt-newpage"><span class="track"></span></label>
-            </div>
-            <div class="switch-row">
+              <span class="switch"><input type="checkbox" id="opt-newpage"><span class="track"></span></span>
+            </label>
+            <label class="switch-row">
               <span>
                 <span class="sw-title">Sheet headers &amp; page numbers</span>
                 <span class="sw-sub" style="display:block">Collection name on top, page number below</span>
               </span>
-              <label class="switch"><input type="checkbox" id="opt-headers" checked><span class="track"></span></label>
-            </div>
-            <div class="switch-row">
+              <span class="switch"><input type="checkbox" id="opt-headers" checked><span class="track"></span></span>
+            </label>
+            <label class="switch-row">
               <span>
                 <span class="sw-title">Color names</span>
                 <span class="sw-sub" style="display:block">Off prints the hex code only</span>
               </span>
-              <label class="switch"><input type="checkbox" id="opt-names" checked><span class="track"></span></label>
-            </div>
+              <span class="switch"><input type="checkbox" id="opt-names" checked><span class="track"></span></span>
+            </label>
           </div>
         </div>
 
@@ -308,8 +310,12 @@
         <span class="pv-zval" id="pv-zval">62%</span>
         <button id="pv-zoom-in" aria-label="Zoom in"><svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 2v8M2 6h8"/></svg></button>
       </div>
-      <button class="ghost-btn" id="pv-export">Export PDF</button>
-      <button class="primary-btn" id="pv-print">Print</button>
+      <!-- grouped so the two actions always share one row on a phone instead of
+           wrapping one at a time (styles.css .pv-actions) -->
+      <div class="pv-actions">
+        <button class="ghost-btn" id="pv-export">Export PDF</button>
+        <button class="primary-btn" id="pv-print">Print</button>
+      </div>
     </div>
     <div class="pv-scroll" id="pv-scroll">
       <div id="print-root"></div>
@@ -348,7 +354,7 @@
   <script src="js/library.js?v=2"></script>
   <script src="js/picker.js?v=2"></script>
   <script src="js/pdf.js?v=19"></script>
-  <script src="js/app.js?v=22"></script>
+  <script src="js/app.js?v=23"></script>
   <script src="js/library-ui.js?v=5"></script>
 </body>
 </html>
