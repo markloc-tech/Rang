@@ -197,11 +197,13 @@
     document.documentElement.setAttribute('data-theme', theme);
     store('sb.theme', theme);
   }
+  /* Light is the default, deliberately: a swatch book is a white-paper document
+     and the sheets are always white, so first run should match what prints.
+     The OS preference is not consulted — only the user's own toggle, which
+     sticks from then on. */
   (function initTheme() {
     var saved = load('sb.theme', null);
-    if (saved === 'light' || saved === 'dark') { applyTheme(saved); return; }
-    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
   })();
   $('#theme-toggle').addEventListener('click', function () {
     var cur = document.documentElement.getAttribute('data-theme');
@@ -1021,8 +1023,8 @@
     if (libraryUI()) libraryUI().saveSelection(selectedRecords());
   });
   $('#sel-clear').addEventListener('click', clearSelection);
+  // Print and Export are the same dialog — one button opens it either way
   $('#sel-print').addEventListener('click', function () { openPrintModal('selected'); });
-  $('#sel-export').addEventListener('click', function () { openPrintModal('selected'); });
   $('#sel-compare').addEventListener('click', openCompare);
 
   /* ---------------- search ---------------- */
@@ -1766,8 +1768,16 @@
       ? projects.length + ' project' + (projects.length === 1 ? '' : 's') + ' saved'
       : 'No projects yet - save a selection into one first';
 
-    if (scope === 'selected' && S.selection.size > 0) {
+    /* A selection is an explicit statement of intent, so it wins the scope by
+       default however the dialog was opened — the alternative is a full 8,808
+       swatch document on top of the picking the user just did. An explicit
+       project/collection request below still overrides it. With nothing
+       selected, "Selected swatches" is the one scope that cannot produce a
+       document, so fall back off it rather than opening on "Nothing to print". */
+    if (S.selection.size > 0) {
       modal.querySelector('input[value="selected"]').checked = true;
+    } else if (getScope() === 'selected') {
+      modal.querySelector('input[value="all"]').checked = true;
     }
     if (scope === 'project' && extra.projectId) {
       $$('#project-picks input').forEach(function (i) { i.checked = i.value === extra.projectId; });
@@ -1778,6 +1788,11 @@
       modal.querySelector('input[value="collections"]').checked = true;
     }
     $('#sub-all').textContent = 'All ' + ALL.length + ' swatches in the book';
+    /* Always reopen on the whole document: a range typed for the last scope
+       ("1-4" of a 12-sheet project) silently truncates the next one, and a
+       stale range is invisible next to a sheet count that looks plausible.
+       refreshDocStats() below clears the hint and any invalid styling. */
+    $('#page-range').value = '';
     // default print order follows the current browsing view
     $$('#order-seg button').forEach(function (b) {
       b.classList.toggle('on', b.dataset.order === S.view);
@@ -1948,13 +1963,14 @@
   $('#pv-export').addEventListener('click', exportCurrent);
 
   // If the user prints via the browser menu without composing a document,
-  // fall back to "everything" so the paper never comes out blank.
+  // fall back to "everything" so the paper never comes out blank. Options match
+  // the dialog's defaults, collection breaks included.
   window.addEventListener('beforeprint', function () {
     if (!$('#print-root').children.length) {
       var geom = currentGeom();
       var opts = {
         scope: 'all', order: 'catalog', pickedCols: [], geom: geom, perPage: geom.perPage,
-        newPagePerCollection: true, showHeaders: true, showNames: true, range: ''
+        newPagePerCollection: false, showHeaders: true, showNames: true, range: ''
       };
       var pages = buildPages(opts);
       renderSheets({ opts: opts, pages: pages, total: pages.length });

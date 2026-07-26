@@ -66,7 +66,10 @@ node dev-server.mjs
   landscape), scope (everything / selected / current view / collections / a saved project),
   order (catalog or flow), density (Large / Standard / Compact), sheet ranges like `1-4, 7`.
   Print and Export always show the live preview first; the PDF is generated client-side.
-- **Theme** — light is pure white, dark is pure black. Sheets always print on white.
+  The dialog opens on **Selected swatches** whenever a selection exists, and the sheet range
+  starts empty every time so a range typed for one document never truncates the next.
+- **Theme** — light is the default; light is pure white, dark is pure black. Sheets always
+  print on white.
 
 ## Your library
 

@@ -125,8 +125,8 @@
     <span class="sel-count" id="sel-count">0 selected</span>
     <button id="sel-save" class="sel-primary">Save…</button>
     <button id="sel-compare">Compare</button>
-    <button id="sel-print">Print</button>
-    <button id="sel-export">Export PDF</button>
+    <!-- one button: both of these opened the same Print & Export dialog -->
+    <button id="sel-print">Print &amp; Export</button>
     <span class="divider"></span>
     <button class="sel-x" id="sel-clear" aria-label="Clear selection" title="Clear selection">
       <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
@@ -247,7 +247,7 @@
                 <span class="sw-title">Start each collection on a new sheet</span>
                 <span class="sw-sub" style="display:block">Pantone-style: one palette per section</span>
               </span>
-              <label class="switch"><input type="checkbox" id="opt-newpage" checked><span class="track"></span></label>
+              <label class="switch"><input type="checkbox" id="opt-newpage"><span class="track"></span></label>
             </div>
             <div class="switch-row">
               <span>
@@ -344,7 +344,7 @@
   <script src="js/library.js?v=2"></script>
   <script src="js/picker.js?v=2"></script>
   <script src="js/pdf.js?v=18"></script>
-  <script src="js/app.js?v=19"></script>
+  <script src="js/app.js?v=20"></script>
   <script src="js/library-ui.js?v=4"></script>
 </body>
 </html>
