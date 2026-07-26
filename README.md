@@ -151,15 +151,17 @@ are already there.
 | A3 | 297 × 420 mm | 24 | 54 | 84 |
 | A4 | 210 × 297 mm | 12 | 24 | 40 |
 | A5 | 148 × 210 mm | 6 | 12 | 15 |
-| Letter | 8.5 × 11 in | 12 | 24 | 35 |
+| Letter | 8.5 × 11 in | 12 | 20 | 35 |
 | Legal | 8.5 × 14 in | 15 | 28 | 50 |
 | Tabloid | 11 × 17 in | 24 | 45 | 84 |
 
 Density is a **chip size**, not a chip count: a Standard chip is the same physical size on A5
 as on A3, so bigger paper simply fits more of them and the book stays comparable sheet to
 sheet. Counts above are portrait; landscape re-solves the grid (A4 landscape Standard is 6 × 4).
-Margins grow with the paper but never shrink below A4's, which is what keeps the footer clear
-of typical printer hardware margins.
+Margins grow with the paper but never shrink below A4's, and the bottom one never goes below
+20mm: the paper-feed gripper band at the bottom edge is unprintable on most printers and runs
+far deeper than the other three edges, so that is what keeps the footer from being sliced in
+half by the printer.
 
 ## Publishing
 

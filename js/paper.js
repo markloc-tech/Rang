@@ -54,16 +54,23 @@
 
   function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
 
-  /* Margins grow with the paper but never shrink below A4's: the 14mm foot
-     is what keeps the footer clear of typical printer hardware margins, and
-     a smaller sheet has exactly the same hardware limits. */
+  /* The bottom edge is the one every printer eats into: the paper-feed grippers
+     make the last stretch of the sheet unprintable, and on consumer inkjets that
+     band runs to 15-17mm (a few older models to 23mm) against 3-5mm on the other
+     three edges. At the old 14mm the footer line box ended exactly on that
+     boundary and printers sliced the footer in half, so the floor is now 20mm —
+     the deepest gripper band we can clear without costing the grid a row on any
+     paper size. Everything else keeps A4's margins as its floor. */
+  var SAFE_BOTTOM = 20;             // mm, printer gripper clearance
+
+  /* Margins grow with the paper but never shrink below A4's. */
   function marginsFor(shortEdge) {
     var scale = clamp(shortEdge / 210, 1, 1.35);
     return {
       left: round2(Math.max(12, 12 * scale)),
       right: round2(Math.max(12, 12 * scale)),
       top: round2(Math.max(10, 10 * scale)),
-      bottom: round2(Math.max(14, 14 * scale))
+      bottom: round2(Math.max(SAFE_BOTTOM, 14 * scale))
     };
   }
 

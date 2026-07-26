@@ -20,7 +20,7 @@
    two. Bump VERSION to throw away every old cache.
    ============================================================ */
 
-var VERSION = 'rang-v1';
+var VERSION = 'rang-v2';
 
 /* Same-origin URLs referenced by index.html, i.e. exactly the files the app
    loads, complete with their cache-busting queries. */

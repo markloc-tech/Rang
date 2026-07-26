@@ -139,8 +139,8 @@
     var PAGE_W = geom.pageWPt;
     var PAGE_H = geom.pageHPt;
 
-    // The bottom margin keeps the footer and last row inside typical printer
-    // hardware margins (must match .sheet padding in styles.css)
+    // The bottom margin keeps the footer and last row clear of the printer's
+    // gripper band (paper.js SAFE_BOTTOM; must match .sheet padding in styles.css)
     var mL = geom.margins.left * MM, mR = geom.margins.right * MM;
     var mT = geom.margins.top * MM, mB = geom.margins.bottom * MM;
     /* Chrome geometry measured off the rendered HTML sheet, so the swatch grid
