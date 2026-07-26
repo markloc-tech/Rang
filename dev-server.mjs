@@ -1,5 +1,5 @@
 // Minimal static server for local development: `node dev-server.mjs`
-// (The site is fully static — you can also just open index.html directly.)
+// (The site is fully static - you can also just open index.html directly.)
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';

@@ -5,7 +5,7 @@
    real collections alongside the built-in palettes).
 
    Everything lives in localStorage, and the whole thing can be
-   written out to — or read back from — a portable ".rang" file
+   written out to - or read back from - a portable ".rang" file
    so palettes can be handed around.
 
    No DOM here: this is the model, the persistence and the file
@@ -76,9 +76,9 @@
       lastError = null;
       return true;
     } catch (e) {
-      // private mode, or the quota is full — the in-memory copy stays usable
+      // private mode, or the quota is full - the in-memory copy stays usable
       lastError = e && e.name === 'QuotaExceededError'
-        ? 'Browser storage is full — remove some colors or export to a .rang file.'
+        ? 'Browser storage is full - remove some colors or export to a .rang file.'
         : 'This browser will not let Rang save locally (private browsing?).';
       return false;
     }
@@ -290,7 +290,7 @@
 
   /**
    * colors: [{ name, hex, note, sourceUid }]. Returns
-   * { added, skipped, duplicates } — `duplicates` counts colors already in
+   * { added, skipped, duplicates } - `duplicates` counts colors already in
    * the set by hex, which are skipped rather than piling up.
    */
   function addColors(kind, id, colors, opts) {

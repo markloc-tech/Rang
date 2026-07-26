@@ -1,12 +1,12 @@
 /* ============================================================
-   Swatchbook — print-ready digital color swatches
+   Swatchbook - print-ready digital color swatches
    Design system: monochrome chrome, pure-white light theme,
    pure-black dark theme. Swatches provide all the color.
    ============================================================ */
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Markloc brand font — Etna Sans Serif (via onlinewebfonts.com, CC BY 4.0) */
+/* Markloc brand font - Etna Sans Serif (via onlinewebfonts.com, CC BY 4.0) */
 @font-face {
   font-family: 'Etna';
   /* woff2 inlined as a data URI: file:// pages get opaque origins and Chrome
@@ -17,7 +17,7 @@
   font-display: block;
 }
 
-/* letter-spacing: 0 — the wordmark keeps its own kerning even inside
+/* letter-spacing: 0 - the wordmark keeps its own kerning even inside
    letter-spaced containers like .sheet-foot */
 .wordmark { font-family: 'Etna', var(--sans); font-weight: normal; letter-spacing: 0; }
 
@@ -25,7 +25,7 @@
   --bg: #ffffff;
   --fg: #0a0a0a;
   --muted: #6f6f76;
-  --faint: #6f6f78;   /* 4.9:1 on pure white — keep >= 4.5 (WCAG AA) */
+  --faint: #6f6f78;   /* 4.9:1 on pure white - keep >= 4.5 (WCAG AA) */
   --line: #e8e8ea;
   --line-strong: #d6d6da;
   --hover: #f5f5f6;
@@ -45,7 +45,7 @@ html[data-theme="dark"] {
   --bg: #000000;
   --fg: #f4f4f5;
   --muted: #93939b;
-  --faint: #8a8a92;   /* 6.1:1 on pure black — keep >= 4.5 (WCAG AA) */
+  --faint: #8a8a92;   /* 6.1:1 on pure black - keep >= 4.5 (WCAG AA) */
   --line: #202023;
   --line-strong: #37373c;
   --hover: #0f0f11;
@@ -927,7 +927,7 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
 }
 .paper-picks { display: flex; flex-wrap: wrap; gap: 6px; }
 .paper-pick .pick-face { padding: 6px 12px 6px 9px; }
-/* glyphs are drawn to relative scale — the A5 pill really is half of A3 */
+/* glyphs are drawn to relative scale - the A5 pill really is half of A3 */
 .paper-glyph {
   width: var(--gw);
   height: var(--gh);
@@ -966,7 +966,7 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
 .seg .seg-opt:hover .seg-face { background: var(--hover); }
 .seg input:checked + .seg-face { border-color: var(--fg); box-shadow: 0 0 0 1px var(--fg); }
 .seg input:focus-visible + .seg-face { outline: 2px solid var(--ring); outline-offset: 2px; }
-/* the icon is the real grid at the real page proportions — width, height and
+/* the icon is the real grid at the real page proportions - width, height and
    track counts are written inline by renderDensitySeg() */
 .seg .seg-ico {
   display: grid;
@@ -1525,7 +1525,7 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
 .pk-modal { width: 620px; }
 .pk-body { padding-bottom: 4px; }
 
-/* field on the left, every value format on the right — keeps the dialog
+/* field on the left, every value format on the right - keeps the dialog
    inside a laptop viewport without scrolling. Stacking to one column puts
    the recents back after the values, where they belong in reading order. */
 .pk-cols {
@@ -1857,7 +1857,7 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
   flex-direction: column;
   /* The 20mm bottom keeps the footer clear of the paper-feed gripper band, which
      is unprintable on most printers and runs far deeper than the other three
-     edges (paper.js SAFE_BOTTOM — mirrored by mB in js/pdf.js) */
+     edges (paper.js SAFE_BOTTOM - mirrored by mB in js/pdf.js) */
   padding: var(--sheet-pt) var(--sheet-px) var(--sheet-pb);
   transform: scale(var(--pz, 0.62));
   transform-origin: top left;
@@ -1933,7 +1933,7 @@ html[data-theme="dark"] .card:hover { box-shadow: 0 3px 16px rgba(0, 0, 0, 0.7);
   white-space: nowrap;
 }
 
-/* density tweaks — sizes mirror DENSITIES in js/paper.js */
+/* density tweaks - sizes mirror DENSITIES in js/paper.js */
 .sheet[data-density="compact"] .pname { font-size: 5pt; }
 .sheet[data-density="compact"] .phex { font-size: 7pt; }
 .sheet[data-density="large"] .pname { font-size: 7pt; }
@@ -2279,7 +2279,7 @@ body.flow-mode #collections { display: none; }
     padding: 8px 8px 8px 10px;
   }
   .sel-bar.show { transform: translateY(0); }
-  /* five actions will not fit on one phone row — let the count take its own */
+  /* five actions will not fit on one phone row - let the count take its own */
   .sel-bar { flex-wrap: wrap; white-space: normal; }
   .sel-bar .sel-count {
     flex: 1 1 100%;

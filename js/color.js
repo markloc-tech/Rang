@@ -2,7 +2,7 @@
    Rang color math
    One home for the conversions the app, the picker and the
    library all need. Everything is sRGB / 8-bit and hexes are
-   always normalised to uppercase #RRGGBB — the whole book is
+   always normalised to uppercase #RRGGBB - the whole book is
    opaque digital color, so alpha is parsed but dropped.
    ============================================================ */
 
@@ -97,7 +97,7 @@
     return [255 * (1 - c) * (1 - k), 255 * (1 - m) * (1 - k), 255 * (1 - y) * (1 - k)];
   }
 
-  /* Perceived brightness — decides whether a label goes black or white. */
+  /* Perceived brightness - decides whether a label goes black or white. */
   function luminance(hex) {
     var rgb = hexToRgb(hex);
     return (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
@@ -197,7 +197,7 @@
   }
 
   /**
-   * Pull every color out of a blob of pasted text — a CSS file, a JSON
+   * Pull every color out of a blob of pasted text - a CSS file, a JSON
    * palette, a column from a spreadsheet. Order is preserved, exact
    * duplicates are dropped, and anything unparseable is ignored.
    */

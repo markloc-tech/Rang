@@ -19,7 +19,7 @@
 
   var BUILTIN = [];                 // the shipped palettes, never mutated
   var CUSTOM = [];                  // the user's own categories, rebuilt on change
-  var COLLECTIONS = [];             // CUSTOM first, then BUILTIN — the book order
+  var COLLECTIONS = [];             // CUSTOM first, then BUILTIN - the book order
   var ALL = [];                     // flat swatch records in catalog (book) order
   var BY_UID = new Map();
 
@@ -199,7 +199,7 @@
   }
   /* Light is the default, deliberately: a swatch book is a white-paper document
      and the sheets are always white, so first run should match what prints.
-     The OS preference is not consulted — only the user's own toggle, which
+     The OS preference is not consulted - only the user's own toggle, which
      sticks from then on. */
   (function initTheme() {
     var saved = load('sb.theme', null);
@@ -290,7 +290,7 @@
         '<span class="check">' + CHECK_SVG + '</span>' +
       '</div>' +
       '<div class="meta">' +
-        // an unnamed custom color is called after its own hex — no point
+        // an unnamed custom color is called after its own hex - no point
         // printing the same string twice, but the line still holds its height
         '<span class="name">' + escapeHtml(sw.name === sw.hex ? '' : sw.name) + '</span>' +
         '<button class="hex" data-hex="' + sw.hex + '" aria-label="Copy color value" title="Copy value">' + sw.hex + '</button>' +
@@ -392,7 +392,7 @@
     head.querySelector('h2').textContent = col.name;
     var desc = head.querySelector('.col-desc');
     desc.textContent = col.description ||
-      'Your own category — add colors by hand, or save any swatch from the book into it.';
+      'Your own category - add colors by hand, or save any swatch from the book into it.';
 
     var actions = document.createElement('div');
     actions.className = 'col-actions';
@@ -573,7 +573,7 @@
     stale.forEach(function (uid) { S.selection.delete(uid); });
     if (stale.length) store('sb.sel', Array.from(S.selection));
 
-    // the new cards start unselected — re-apply what survived
+    // the new cards start unselected - re-apply what survived
     S.selection.forEach(function (uid) {
       var card = cardEls.get(uid);
       if (card) {
@@ -776,7 +776,7 @@
   var CHUNK = 240;
 
   // Flow shows each color once: duplicates across collections collapse
-  // to the first record in flow order. flowKept is the canonical list —
+  // to the first record in flow order. flowKept is the canonical list -
   // selection ranges, jumps and rendering in flow all use it so hidden
   // duplicates can never be acted on invisibly.
   function buildFlowKept() {
@@ -838,7 +838,7 @@
   });
 
   // The uid order currently on screen (for shift-click ranges). In flow
-  // this is the deduped list — ranges must never touch hidden duplicates.
+  // this is the deduped list - ranges must never touch hidden duplicates.
   function currentOrder() {
     return S.view === 'flow' ? buildFlowKept() : ALL;
   }
@@ -931,7 +931,7 @@
           if (S.selection.has(s.uid)) selected++;
         }
       });
-      // a custom category has no family header of its own — its counts and
+      // a custom category has no family header of its own - its counts and
       // checkbox live on the section head, which the loop above already did
       if (fe.custom) return;
       fe.countEl.textContent = selected > 0 ? selected + ' / ' + visible : String(visible);
@@ -1023,7 +1023,7 @@
     if (libraryUI()) libraryUI().saveSelection(selectedRecords());
   });
   $('#sel-clear').addEventListener('click', clearSelection);
-  // Print and Export are the same dialog — one button opens it either way
+  // Print and Export are the same dialog - one button opens it either way
   $('#sel-print').addEventListener('click', function () { openPrintModal('selected'); });
   $('#sel-compare').addEventListener('click', openCompare);
 
@@ -1044,7 +1044,7 @@
     searchInput.focus();
   });
 
-  // Invalid "specific steps" text is cosmetic (red border) — the slider
+  // Invalid "specific steps" text is cosmetic (red border) - the slider
   // range keeps filtering rather than silently switching everything off.
   function stepsActive() {
     if (S.steps.list) return S.steps.list.size > 0;
@@ -1119,7 +1119,7 @@
         return f.swatches.some(function (s) { return S.visible.has(s.uid); });
       });
       // an empty category still shows itself (and its "add colors" prompt)
-      // while nothing is being filtered — otherwise it would look lost
+      // while nothing is being filtered - otherwise it would look lost
       if (col.custom && !filtering) vis = true;
       entry.section.style.display = vis ? '' : 'none';
     });
@@ -1309,8 +1309,8 @@
       .filter(Boolean), title);
   }
 
-  /* Takes plain { name, hex } records, so a project's colors — which are not
-     part of the book — can be compared exactly like swatches.
+  /* Takes plain { name, hex } records, so a project's colors - which are not
+     part of the book - can be compared exactly like swatches.
      Also serves the single-color full-screen view (recs.length === 1). */
   function openCompareRecords(recs, title) {
     var strips = $('#cmp-strips');
@@ -1440,7 +1440,7 @@
       var gh = (16 * p.h / longest).toFixed(1);
       var label = document.createElement('label');
       label.className = 'pick paper-pick';
-      label.title = p.name + ' — ' + p.note;
+      label.title = p.name + ' - ' + p.note;
       label.innerHTML =
         '<input type="radio" name="paper" value="' + p.id + '"' +
           (p.id === S.paper ? ' checked' : '') + '>' +
@@ -1553,7 +1553,7 @@
       // one continuous hue/shade gradient across everything in scope,
       // each unique color printed once (matches the Flow view). Sorting the
       // scoped records rather than filtering the global order lets project
-      // colors — which are not in the book — flow too.
+      // colors - which are not in the book - flow too.
       var scoped = [];
       groups.forEach(function (g) {
         g.swatches.forEach(function (s) { scoped.push(s); });
@@ -1679,9 +1679,9 @@
   /* ---------------- sheet DOM rendering ---------------- */
 
   /* Sheet footer credit. js/pdf.js builds the same line from its appName option,
-     so keep the two in step — the printed sheet and the PDF must read alike. */
+     so keep the two in step - the printed sheet and the PDF must read alike. */
   var APP_NAME = 'Rang';
-  var BRAND_LINE = APP_NAME.toUpperCase() + ' — AN OPEN SOURCE PROJECT BY';
+  var BRAND_LINE = APP_NAME.toUpperCase() + ' - AN OPEN SOURCE PROJECT BY';
 
   function renderSheets(doc) {
     var root = $('#print-root');
@@ -1769,7 +1769,7 @@
       : 'No projects yet - save a selection into one first';
 
     /* A selection is an explicit statement of intent, so it wins the scope by
-       default however the dialog was opened — the alternative is a full 8,808
+       default however the dialog was opened - the alternative is a full 8,808
        swatch document on top of the picking the user just did. An explicit
        project/collection request below still overrides it. With nothing
        selected, "Selected swatches" is the one scope that cannot produce a
@@ -1851,7 +1851,7 @@
     var projects = LIB.list('projects');
     wrap.innerHTML = '';
     if (!projects.length) {
-      wrap.innerHTML = '<p class="pick-empty">No projects yet — save a selection into one first.</p>';
+      wrap.innerHTML = '<p class="pick-empty">No projects yet - save a selection into one first.</p>';
       return;
     }
     projects.forEach(function (p, i) {
@@ -2076,7 +2076,7 @@
     return nearIndex;
   }
 
-  /** The closest color in the whole book — powers the picker's "snap to". */
+  /** The closest color in the whole book - powers the picker's "snap to". */
   function nearestSwatch(hex) {
     if (!ALL.length) return null;
     var idx = nearIndex && nearIndex.length === ALL.length ? nearIndex : buildNearIndex();
@@ -2086,7 +2086,7 @@
       var c = idx[i];
       var rm = (t[0] + c[0]) / 2;
       var dr = t[0] - c[0], dg = t[1] - c[1], db = t[2] - c[2];
-      // squared weighted distance — the ranking is all that matters here
+      // squared weighted distance - the ranking is all that matters here
       var d = (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
       if (d < bestD) { bestD = d; best = i; if (d === 0) break; }
     }
@@ -2108,7 +2108,7 @@
     categoryCount: function () { return CUSTOM.length; }
   };
 
-  /* Any change to the library — from any part of the UI — folds straight
+  /* Any change to the library - from any part of the UI - folds straight
      back into the book. Project edits never touch the catalog, so they skip
      the rebuild and only refresh what actually shows them. */
   LIB.subscribe(function (detail) {
@@ -2123,8 +2123,8 @@
 
   /* ---------------- offline ---------------- */
 
-  /* Rang needs no network at all — the colors, the PDF writer and your library
-     are all local — so the only thing a service worker adds is having the
+  /* Rang needs no network at all - the colors, the PDF writer and your library
+     are all local - so the only thing a service worker adds is having the
      files themselves on hand. Registration is deliberately best-effort:
      service workers need a secure context, so opening index.html straight off
      the disk (file://) simply skips this and keeps working as it always has. */

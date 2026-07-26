@@ -6,7 +6,7 @@
    numbers, so the preview, the printed page and the exported
    PDF are always the same document.
 
-   Nothing here touches the DOM — it is pure geometry, shared
+   Nothing here touches the DOM - it is pure geometry, shared
    with Node so the PDF writer can be tested headlessly.
    ============================================================ */
 
@@ -36,7 +36,7 @@
   var HEAD_H = 12.38;               // mm, header block incl. its margin
   var FOOT_H = 8.07;                // mm, footer block
 
-  /* Density levels. targetW/targetH are the A4 cell dimensions at that level —
+  /* Density levels. targetW/targetH are the A4 cell dimensions at that level -
      bigger paper simply fits more of the same-sized cells, so a chip is
      physically the same size on A5 as on A3 and the book stays comparable
      sheet to sheet. Solving for these targets reproduces the original A4
@@ -58,7 +58,7 @@
      make the last stretch of the sheet unprintable, and on consumer inkjets that
      band runs to 15-17mm (a few older models to 23mm) against 3-5mm on the other
      three edges. At the old 14mm the footer line box ended exactly on that
-     boundary and printers sliced the footer in half, so the floor is now 20mm —
+     boundary and printers sliced the footer in half, so the floor is now 20mm -
      the deepest gripper band we can clear without costing the grid a row on any
      paper size. Everything else keeps A4's margins as its floor. */
   var SAFE_BOTTOM = 20;             // mm, printer gripper clearance
@@ -97,7 +97,7 @@
    *
    * The grid is always solved against the header-and-footer geometry, even
    * when the chrome is switched off, so toggling headers never reshuffles
-   * the grid — it only gives the same cells more room.
+   * the grid - it only gives the same cells more room.
    */
   function geometry(paperId, landscape, densityId) {
     var paper = BY_ID[paperId] || BY_ID.a4;
@@ -137,7 +137,7 @@
       headH: HEAD_H,
       footH: FOOT_H,
 
-      /* Sheet subtitle, e.g. "A4 · 210 × 297 mm" — pdf.js upper-cases it. */
+      /* Sheet subtitle, e.g. "A4 · 210 × 297 mm" - pdf.js upper-cases it. */
       subLabel: paper.name + (landscape ? ' landscape' : '') + ' · ' + dimsLabel(paper, landscape),
       /* Suffix for exported file names, e.g. "a4" or "a3-landscape". */
       slug: paper.id + (landscape ? '-landscape' : '')

@@ -6,7 +6,7 @@
    the chips, mirroring the print stylesheet layout.
 
    Page size, margins and the swatch grid all come from
-   js/paper.js — the same numbers the stylesheet lays the
+   js/paper.js - the same numbers the stylesheet lays the
    preview out with, so the two renderers cannot drift.
    ============================================================ */
 
@@ -21,12 +21,12 @@
   // Markloc wordmark as raw PDF path ops (converted from assets/markloc-logo.svg,
   // y-up, box 487.5 x 97.5; glyph baseline at y=1.2, cap height 90).
   // LOGO_CAP is the M cap height (top 91.2 - baseline 1.2); scale the wordmark
-  // by CAP HEIGHT, not by its ascender — it sits in a line of all-caps text.
+  // by CAP HEIGHT, not by its ascender - it sits in a line of all-caps text.
   var LOGO_W = 487.5, LOGO_CAP = 90, LOGO_BASE = 1.2;
   var HELV_CAP = 0.717;             // Helvetica cap height, em fraction
   // Cap-height parity alone reads too quiet for a brand mark, so the wordmark is
   // set 22% above it. Mirrors the 1.322em on .foot-logo in css/styles.css
-  // (= 1.084 cap parity x 1.22) — change the two together.
+  // (= 1.084 cap parity x 1.22) - change the two together.
   var LOGO_BOOST = 1.22;
   var LOGO_OPS = '102.79 91.2 m 102.79 1.2 l 81.2 1.2 l 81.2 51.6 l 54.48 34.57 l 28.57 51.46 l 28.57 1.2 l 6.98 1.2 l 6.98 91.2 l 54.75 60.32 l h 162.35 72.79 m 181.72 72.79 l 181.72 1.2 l 162.35 1.2 l 162.35 9.23 l 158.38 4.06 152.38 1.48 144.35 1.48 c 134.55 1.38 126.15 4.8 119.14 11.73 c 112.12 18.64 108.57 27.04 108.47 36.92 c 108.39 46.7 111.8 55.11 118.72 62.12 c 125.65 69.14 134.05 72.7 143.92 72.79 c 152.05 72.79 158.19 70.16 162.35 64.9 c h 156.53 24.74 m 159.94 28.15 161.64 32.3 161.64 37.2 c 161.64 42.18 159.89 46.34 156.39 49.67 c 152.88 53.17 148.77 54.83 144.07 54.65 c 139.17 54.65 135.01 52.94 131.6 49.52 c 128.19 46.11 126.49 41.95 126.49 37.06 c 126.49 32.25 128.24 28.1 131.74 24.6 c 135.15 21.18 139.31 19.48 144.21 19.48 c 149.18 19.67 153.29 21.42 156.53 24.74 c h 209.43 61.85 m 211 66.28 213.62 69.37 217.32 71.12 c 220.92 72.88 226.32 73.76 233.53 73.76 c 233.53 53.95 l 226.5 53.95 220.64 51.55 215.93 46.76 c 211.6 42.51 209.43 37.85 209.43 32.77 c 209.43 1.2 l 190.04 1.2 l 190.04 72.51 l 209.43 72.51 l h 288.91 1.2 m 265.79 28.88 l 259.14 22.38 l 259.14 1.2 l 239.75 1.2 l 239.75 97.43 l 259.14 97.43 l 259.14 49.81 l 281.85 72.51 l 309.27 72.37 l 279.35 42.6 l 314.66 1.2 l h 342.37 97.43 m 342.37 1.2 l 322.98 1.2 l 322.98 97.43 l h 383.48 72.51 m 393.36 72.6 401.76 69.18 408.69 62.26 c 415.71 55.25 419.22 46.85 419.22 37.06 c 419.3 27.18 415.88 18.78 408.97 11.85 c 402.04 4.84 393.69 1.29 383.91 1.2 c 374.03 1.1 365.58 4.52 358.56 11.45 c 351.54 18.36 348.03 26.76 348.03 36.65 c 347.94 46.52 351.36 54.92 358.28 61.85 c 365.21 68.86 373.61 72.42 383.48 72.51 c h 396.09 24.46 m 399.5 27.88 401.2 32.03 401.2 36.92 c 401.2 41.72 399.45 45.87 395.95 49.38 c 392.44 52.7 388.28 54.37 383.48 54.37 c 378.68 54.37 374.57 52.66 371.16 49.24 c 367.75 45.64 366.05 41.49 366.05 36.79 c 366.05 31.99 367.8 27.83 371.3 24.32 c 374.71 20.9 378.87 19.2 383.77 19.2 c 388.74 19.38 392.85 21.14 396.09 24.46 c h 481.94 9.77 m 475.2 4.06 467.35 1.2 458.39 1.2 c 448.52 1.29 440.12 4.84 433.21 11.85 c 426.28 18.87 422.86 27.27 422.96 37.06 c 423.05 46.93 426.6 55.33 433.61 62.26 c 440.63 69.18 449.03 72.6 458.81 72.51 c 467.68 72.42 475.43 69.46 482.08 63.65 c 469.21 50.9 l 466.06 53.21 462.55 54.37 458.67 54.37 c 453.87 54.37 449.72 52.7 446.22 49.38 c 442.8 45.97 441.1 41.81 441.1 36.92 c 440.91 32.12 442.57 27.97 446.08 24.46 c 449.4 21.14 453.55 19.38 458.53 19.2 c 462.42 19.2 465.93 20.35 469.06 22.67 c h';
 
@@ -39,12 +39,12 @@
   var CHIP_STROKE = '0.85 0.85 0.85';
 
   /* PDF literal strings here are WinAnsi. Keep to ASCII plus the three
-     punctuation marks the sheet markup actually uses — em dash, middle dot and
+     punctuation marks the sheet markup actually uses - em dash, middle dot and
      multiplication sign all have WinAnsi slots, so map them through rather than
      dropping them: the printed sheet and the PDF must read the same. */
   function ascii(s) {
     return String(s)
-      .replace(/—/g, '\x97').replace(/·/g, '\xB7').replace(/×/g, '\xD7')
+      .replace(/-/g, '\x97').replace(/·/g, '\xB7').replace(/×/g, '\xD7')
       .replace(/[^\x20-\x7E\x97\xB7\xD7]/g, '');
   }
 
@@ -66,13 +66,13 @@
 
   /* The sheet stylesheet letter-spaces most of its label text. PDF expresses the
      same thing with the Tc operator, and like CSS it adds the extra space after
-     every glyph including the last — so widths are just n * tracking wider.
+     every glyph including the last - so widths are just n * tracking wider.
      Tracking values below mirror the letter-spacing in css/styles.css. */
   var TRACK_TITLE = 0.02, TRACK_SUB = 0.08, TRACK_FOOT = 0.06, TRACK_NAME = 0.05;
 
   /* Real Helvetica advance widths, per mille of an em (from the base-14 metrics).
      Right-aligned runs and the wordmark's x both depend on knowing exactly where
-     a string ends, so an average-per-character estimate is not good enough — it
+     a string ends, so an average-per-character estimate is not good enough - it
      leaves the page label visibly short of the margin, by a different amount on
      every sheet. */
   var HELV_W = {
@@ -190,11 +190,11 @@
         var footY = mB + 1.761 * MM;    // .sheet-foot baseline, measured (see above)
         var footSize = 7.5;
         // app.js passes its BRAND_LINE so the sheet and the PDF cannot drift apart
-        var brand = opts.brandLine || (appName.toUpperCase() + ' — AN OPEN SOURCE PROJECT BY');
+        var brand = opts.brandLine || (appName.toUpperCase() + ' - AN OPEN SOURCE PROJECT BY');
         c += textOp('F1', footSize, FAINT_TEXT, mL, footY, brand, TRACK_FOOT);
         // Markloc wordmark, scaled so its cap height equals the caps beside it.
         // Placed at the advance position after the trailing space, exactly as a
-        // text engine would — its own left side bearing supplies the rest of the
+        // text engine would - its own left side bearing supplies the rest of the
         // gap, which is what the browser does for the HTML sheet. The wordmark
         // itself is never tracked (.wordmark resets letter-spacing).
         var lgS = (footSize * HELV_CAP * LOGO_BOOST) / LOGO_CAP;

@@ -203,7 +203,7 @@
         '<div class="lib-blank">' +
           '<h3>No ' + KIND_LABEL[kind] + 's yet</h3>' +
           '<p>' + (kind === 'projects'
-            ? 'A project is a saved set of colors — pick swatches anywhere in the book and save them here, or build one from scratch.'
+            ? 'A project is a saved set of colors - pick swatches anywhere in the book and save them here, or build one from scratch.'
             : 'A category becomes part of the book: it appears in the catalog, in search, in Flow and in print, right alongside Tailwind and the rest.') +
           '</p>' +
           '<div class="lib-blank-actions">' +
@@ -302,7 +302,7 @@
       menu.hidden = !menu.hidden;
       moreBtn.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
     });
-    // one document listener, replaced each render — the detail pane is rebuilt
+    // one document listener, replaced each render - the detail pane is rebuilt
     // on every library change, so adding one per render would pile up
     if (menuCloser) document.removeEventListener('mousedown', menuCloser);
     menuCloser = function (e) {
@@ -513,7 +513,7 @@
       '<label class="dlg-field"><span class="field-label">Description <em>optional</em></span>' +
         '<input id="dlg-desc" maxlength="' + LIB.MAX_DESC + '" placeholder="What is this for?"></label>' +
       '<p class="dlg-note">' + (kind === 'projects'
-        ? 'Projects stay out of the way — they live here in your library.'
+        ? 'Projects stay out of the way - they live here in your library.'
         : 'Categories join the book: catalog, search, Flow and print.') + '</p>';
 
     dialog({
@@ -772,7 +772,7 @@
 
     var body = document.createElement('div');
     body.innerHTML =
-      '<p class="dlg-note imp-from">From <strong>' + esc(filename) + '</strong> — ' +
+      '<p class="dlg-note imp-from">From <strong>' + esc(filename) + '</strong> - ' +
         plural(doc.projects.length, 'project') + ', ' + plural(doc.categories.length, 'category') +
         ', ' + plural(colors, 'color') + '.</p>' +
       '<ul class="imp-list">' + preview.join('') + '</ul>' +

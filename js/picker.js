@@ -102,7 +102,7 @@
               '<span class="pk-preview" id="pk-preview"></span>' +
               '<label class="pk-field pk-hex"><span>HEX</span>' +
                 '<input id="pk-in-hex" type="text" autocomplete="off" spellcheck="false" ' +
-                'aria-label="Hex value — also accepts rgb(), hsl() and CSS color names"></label>' +
+                'aria-label="Hex value - also accepts rgb(), hsl() and CSS color names"></label>' +
               '<button class="ghost-btn pk-dropper" id="pk-dropper" title="Pick a color from the screen" hidden>' +
                 SVG_DROPPER + '</button>' +
             '</div>' +
@@ -135,12 +135,12 @@
             '<label class="pk-name" id="pk-name-wrap">' +
               '<span class="field-label">Name</span>' +
               '<input id="pk-in-name" type="text" maxlength="60" autocomplete="off" ' +
-              'placeholder="Optional — defaults to the hex" aria-label="Color name">' +
+              'placeholder="Optional - defaults to the hex" aria-label="Color name">' +
             '</label>' +
           '</div>' +
 
           '<div class="pk-pane" id="pk-pane-bulk" hidden>' +
-            '<p class="pk-hint">Paste anything with colors in it — a CSS file, a JSON palette, a column of hex codes. ' +
+            '<p class="pk-hint">Paste anything with colors in it – a CSS file, a JSON palette, a column of hex codes. ' +
             'Rang finds <code>#hex</code>, <code>rgb()</code>, <code>hsl()</code> and CSS color names, in order, without duplicates.</p>' +
             '<textarea id="pk-bulk" rows="7" spellcheck="false" aria-label="Paste colors" ' +
               'placeholder="#0A0A0A&#10;rgb(239, 68, 68)&#10;hsl(210 100% 50%)&#10;tomato"></textarea>' +
@@ -470,7 +470,7 @@
 
     state.open = true;
     el.classList.add('show');
-    // the field is the point of the dialog — put the caret in the hex box,
+    // the field is the point of the dialog - put the caret in the hex box,
     // which is the fastest way in for anyone who already knows the value
     setTimeout(function () { refs['in-hex'].select(); }, 0);
   }

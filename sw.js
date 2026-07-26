@@ -1,6 +1,6 @@
 /* ============================================================
    Rang service worker
-   Rang has no network features — every color, the PDF writer
+   Rang has no network features - every color, the PDF writer
    and your whole library are already local. The only thing
    standing between it and working offline is the browser
    needing the files themselves, so this caches them.
@@ -16,7 +16,7 @@
      being cached forever.
 
    The precache list is read out of index.html at install time
-   rather than duplicated here — one list to keep correct, not
+   rather than duplicated here - one list to keep correct, not
    two. Bump VERSION to throw away every old cache.
    ============================================================ */
 
@@ -51,7 +51,7 @@ function precache() {
       .then(function (html) {
         var urls = assetsFrom(html, shell);
         // one at a time would be tidier, but addAll fails the whole install if
-        // any single file 404s — which is the behaviour we want here
+        // any single file 404s - which is the behaviour we want here
         return cache.addAll(urls);
       });
   });
@@ -98,7 +98,7 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== self.location.origin) return;
 
   // Navigations: fresh HTML when there is a network, the cached shell when not.
-  // Revalidated with the server rather than taken from the HTTP cache — hosts
+  // Revalidated with the server rather than taken from the HTTP cache - hosts
   // like GitHub Pages send a ten-minute max-age, and this page is the version
   // pointer for every ?v= asset, so it has to be current. Fetched by URL
   // because a request whose mode is "navigate" cannot be re-constructed.
@@ -110,7 +110,7 @@ self.addEventListener('fetch', function (e) {
           return res;
         }).catch(function () {
           // Offline: this exact URL, then the shell, then an honest message.
-          // Each step has to be awaited — cache.match() resolves to undefined
+          // Each step has to be awaited - cache.match() resolves to undefined
           // on a miss, and a bare `||` chain would just return the promise.
           return cache.match(req).then(function (hit) {
             if (hit) return hit;
